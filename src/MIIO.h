@@ -5,16 +5,16 @@
 
 class MIIO
 {
-private:
-  Stream* _serial;
 public:
   MIIO(Stream& serial);
 
-  void begin(const char* model, const char* ble_pid, const char* mcu_version);
+  void begin(const char* model, const char* blePid, const char* mcuVersion);
 
-  void begin(String model, String ble_pid, String mcu_version);
+  void begin(String model, String blePid, String mcuVersion);
 
   void loop();
+private:
+  Stream* _serial;
 };
 
 #endif

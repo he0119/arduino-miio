@@ -5,13 +5,13 @@ MIIO::MIIO(Stream& serial)
   _serial = &serial;
 }
 
-void MIIO::begin(const char* model, const char* mcu_version, const char* ble_pid)
+void MIIO::begin(const char* model, const char* blePid, const char* mcuVersion)
 {
 }
 
-void MIIO::begin(String model, String mcu_version, String ble_pid)
+void MIIO::begin(String model, String blePid, String mcuVersion)
 {
-  begin(model.c_str(), mcu_version.c_str(), ble_pid.c_str());
+  begin(model.c_str(), blePid.c_str(), mcuVersion.c_str());
 }
 
 void MIIO::loop()
