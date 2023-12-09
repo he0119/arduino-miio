@@ -24,3 +24,16 @@ arduino-cli core install esp32:esp32
 根据设备情况指定端口。
 
 `arduino-cli upload --library . --fqbn esp32:esp32:esp32 -p COM4 ./examples/Connect/Connect.ino`
+
+### VSCode
+
+使用 VSCode 配合 Arduino 插件开发时，没有找到设置当前工作目录为 library 的方法。
+
+只能通过符号链接将项目所在文件夹放置 `arduino-cli.yaml` 配置文件中的 `directories.user` 中。（实现类似 pip install -e 的效果）
+
+```pwsh
+cd <directories.user>
+New-Item -ItemType SymbolicLink -Path "MIIO" -Target <arduino-miio 项目文件夹>
+```
+
+这样才能正确编译示例项目并生成 `c_cpp_properties.json`。
