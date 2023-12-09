@@ -4,7 +4,7 @@
 
 ## 开发
 
-推荐使用 [arduino-cli](https://arduino.github.io/arduino-cli/)。
+推荐使用 [arduino-cli](https://arduino.github.io/arduino-cli/)
 
 ### 依赖
 
