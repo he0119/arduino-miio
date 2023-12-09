@@ -1,6 +1,6 @@
 # arduino-miio
 
-通过串口与小米模组通讯
+通过串口与小米模组通讯。
 
 ## 开发
 
@@ -30,3 +30,4 @@ New-Item -ItemType SymbolicLink -Path "user/libraries/MIIO" -Target "arduino-mii
 根据设备情况指定端口。
 
 `arduino-cli upload --fqbn esp32:esp32:esp32 -p COM4 .\examples\Connect\Connect.ino`
+
