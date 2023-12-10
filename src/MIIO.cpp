@@ -60,12 +60,33 @@ void MIIO::setPollInterval(unsigned long interval)
 
 String MIIO::recvStr()
 {
-  return _serial->readStringUntil(END_CHAR);
+  String recv = _serial->readStringUntil(END_CHAR);
+
+  if (recv.isEmpty()) {
+    DEBUG_MIIO("[MIIO]recv string: null\n");
+  }
+  else {
+    DEBUG_MIIO("[MIIO]recv string: %s\n", recv);
+  }
+
+  return recv;
 }
 
 int MIIO::sendStr(const char* str)
 {
-  return _serial->write(str);
+  int len = strlen(str);
+  if (len <= 0) { return UART_OK; }
+
+  int nSend = _serial->write(str);
+
+  if (nSend < len) {
+    DEBUG_MIIO("[MIIO]send string failed\n");
+    return UART_SEND_ERROR;
+  }
+
+  DEBUG_MIIO("[MIIO]send string: %s\n", str);
+
+  return nSend;
 }
 
 int MIIO::sendStr(String str)
@@ -78,15 +99,28 @@ int MIIO::sendStrWaitAck(const char* str)
   int len = strlen(str);
   if (len <= 0) { return UART_OK; }
 
-  int n_send = _serial->write(str);
+  int nSend = _serial->write(str);
+
+  if (nSend < len) {
+    DEBUG_MIIO("[MIIO]send string failed 1\n");
+    return UART_SEND_ERROR;
+  }
+
+  if (nSend < len) {
+    DEBUG_MIIO("[MIIO]send string failed\n");
+    return UART_SEND_ERROR;
+  }
+
+  DEBUG_MIIO("[MIIO]send string: %s\n", str);
 
   String ack = recvStr();
 
   if (ack != OK_STRING) {
+    DEBUG_MIIO("[MIIO]send string wait ack failed 2, str=%s\n", ack);
     return UART_RECV_ACK_ERROR;
   }
 
-  return n_send;
+  return nSend;
 }
 
 int MIIO::sendStrWaitAck(String str)

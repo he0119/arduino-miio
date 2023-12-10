@@ -4,7 +4,7 @@
   "buildPreferences": [
     [
       "build.defines",
-      "-DENABLE_DEBUG"
+      "-DDEBUG_ESP_PORT=Serial"
     ]
   ],
   "output": ".vscode/build",

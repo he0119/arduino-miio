@@ -3,6 +3,23 @@
 
 #include "Arduino.h"
 
+#ifndef NODEBUG_MIIO
+#ifdef DEBUG_ESP_PORT
+#define DEBUG_MIIO(...)               \
+    {                                       \
+        DEBUG_ESP_PORT.printf(__VA_ARGS__); \
+        DEBUG_ESP_PORT.flush();             \
+    }
+#endif
+#endif
+
+#ifndef DEBUG_MIIO
+#define DEBUG_MIIO(...)
+#ifndef NODEBUG_MIIO
+#define NODEBUG_MIIO
+#endif
+#endif
+
 class MIIO
 {
 public:
