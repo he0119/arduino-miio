@@ -28,7 +28,7 @@ public:
   */
   void setPollInterval(unsigned long interval);
 
-  String recvStr(unsigned long timeout = 0);
+  String recvStr();
 
   int sendStr(const char* str);
 
@@ -43,6 +43,7 @@ private:
   Stream* _serial;
   unsigned long _serialTimeoutMs = 200;
   unsigned long _pollIntervalMs = 200;
+  unsigned long _lastPoll = 0;
 };
 
 #endif

@@ -32,9 +32,23 @@ void MIIO::begin(String model, String blePid, String mcuVersion)
 
 void MIIO::loop()
 {
-  delay(_pollIntervalMs);
-  // TODO: 实现命令处理逻辑
-  sendStr("hello world\n");
+  if (millis() - _lastPoll < _pollIntervalMs) {
+    return;
+  }
+  _lastPoll = millis();
+
+  sendStr("get_down\r");
+
+  String recv = recvStr();
+
+  if (recv.isEmpty()) {
+    return;
+  }
+
+  if (!recv.endsWith(String('\r'))) {
+    return;
+  }
+
 }
 
 void MIIO::setSerialTimeout(unsigned long timeout)
@@ -48,7 +62,7 @@ void MIIO::setPollInterval(unsigned long interval)
   _pollIntervalMs = interval;
 }
 
-String MIIO::recvStr(unsigned long timeout)
+String MIIO::recvStr()
 {
   return _serial->readStringUntil(END_CHAR);
 }
@@ -70,7 +84,7 @@ int MIIO::sendStrWaitAck(const char* str)
 
   int n_send = _serial->write(str);
 
-  String ack = recvStr(_serialTimeoutMs);
+  String ack = recvStr();
 
   if (ack != OK_STRING) {
     return UART_RECV_ACK_ERROR;
