@@ -14,7 +14,6 @@ public:
 
   void loop();
 
-
   /* 串口超时
 
   单位 ms
@@ -41,7 +40,6 @@ public:
 
 private:
   Stream* _serial;
-  unsigned long _serialTimeoutMs = 200;
   unsigned long _pollIntervalMs = 200;
   unsigned long _lastPoll = 0;
 };

@@ -8,8 +8,6 @@ MIIO::MIIO(Stream& serial)
 
 void MIIO::begin(const char* model, const char* blePid, const char* mcuVersion)
 {
-  _serial->setTimeout(_serialTimeoutMs);
-
   {
     int result = 0;
     do {
@@ -48,13 +46,11 @@ void MIIO::loop()
   if (!recv.endsWith(String('\r'))) {
     return;
   }
-
 }
 
 void MIIO::setSerialTimeout(unsigned long timeout)
 {
-  _serialTimeoutMs = timeout;
-  _serial->setTimeout(_serialTimeoutMs);
+  _serial->setTimeout(timeout);
 }
 
 void MIIO::setPollInterval(unsigned long interval)
