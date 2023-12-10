@@ -37,15 +37,29 @@ void MIIO::loop()
 
   sendStr("get_down\r");
 
-  String recv = recvStr();
+  // FIXME: 目前会卡住 loop，直到超时
+  // 需要改成非阻塞的方式
+  size_t nRecv = recvStr(_pbuf, CMD_STR_MAX_LEN);
 
-  if (recv.isEmpty()) {
+  if (nRecv <= 0) {
+    DEBUG_MIIO("[MIIO]uart connected error or module rebooting...\n");
     return;
   }
 
-  if (!recv.endsWith(String('\r'))) {
+  if (_pbuf[nRecv - 1] != END_CHAR) {
+    DEBUG_MIIO("[MIIO]uart recv error[%s]\n", _pbuf);
     return;
   }
+
+  // unsigned int methodLen = sizeof(_method);
+  // int ret;
+
+  // ret = uart_comamnd_decoder(_pbuf, nRecv, _method, &methodLen);
+  // if (MIIO_OK != ret) { /* judge if string decoded correctly */
+  //   DEBUG_MIIO("[MIIO]get method failed[%s]", _pbuf);
+  //   ret = MIIO_ERROR_PARAM;
+  //   return;
+  // }
 }
 
 void MIIO::setSerialTimeout(unsigned long timeout)
@@ -58,21 +72,8 @@ void MIIO::setPollInterval(unsigned long interval)
   _pollIntervalMs = interval;
 }
 
-String MIIO::recvStr()
-{
-  String recv = _serial->readStringUntil(END_CHAR);
 
-  if (recv.isEmpty()) {
-    DEBUG_MIIO("[MIIO]recv string: null\n");
-  }
-  else {
-    DEBUG_MIIO("[MIIO]recv string: %s\n", recv);
-  }
-
-  return recv;
-}
-
-int MIIO::sendStr(const char* str)
+size_t MIIO::sendStr(const char* str)
 {
   int len = strlen(str);
   if (len <= 0) { return UART_OK; }
@@ -89,17 +90,17 @@ int MIIO::sendStr(const char* str)
   return nSend;
 }
 
-int MIIO::sendStr(String str)
+size_t MIIO::sendStr(String str)
 {
   return sendStr(str.c_str());
 }
 
-int MIIO::sendStrWaitAck(const char* str)
+size_t MIIO::sendStrWaitAck(const char* str)
 {
-  int len = strlen(str);
+  size_t len = strlen(str);
   if (len <= 0) { return UART_OK; }
 
-  int nSend = _serial->write(str);
+  size_t nSend = _serial->write(str);
 
   if (nSend < len) {
     DEBUG_MIIO("[MIIO]send string failed 1\n");
@@ -113,17 +114,53 @@ int MIIO::sendStrWaitAck(const char* str)
 
   DEBUG_MIIO("[MIIO]send string: %s\n", str);
 
-  String ack = recvStr();
+  char ackBuf[ACK_BUF_SIZE] = { 0 };
+  memset(ackBuf, 0, ACK_BUF_SIZE);
 
-  if (ack != OK_STRING) {
-    DEBUG_MIIO("[MIIO]send string wait ack failed 2, str=%s\n", ack);
+  recvStr(ackBuf, ACK_BUF_SIZE);
+
+  if (0 != strncmp((const char*)ackBuf, "ok", strlen("ok"))) {
+    DEBUG_MIIO("[MIIO]send string wait ack failed 2, str=%s\n", ackBuf);
     return UART_RECV_ACK_ERROR;
   }
 
   return nSend;
 }
 
-int MIIO::sendStrWaitAck(String str)
+size_t MIIO::sendStrWaitAck(String str)
 {
   return sendStrWaitAck(str.c_str());
+}
+
+size_t MIIO::recvStr(char* buffer, size_t length)
+{
+  int nRead = _serial->readBytes(buffer, length);
+
+  int retry = 0;
+  while (buffer[nRead > 0 ? (nRead - 1) : 0] != END_CHAR && retry < _receiveRetry) {
+    if (nRead >= length) {
+      DEBUG_MIIO("[MIIO]out of buffer %d %d retry=%d\n", length, nRead, retry);
+      memset(buffer, 0, length);
+      nRead = 0;
+      retry = 0;
+    }
+    nRead = nRead + _serial->readBytes(buffer + nRead, length - nRead);
+    retry++;
+  }
+
+  buffer[nRead] = '\0';
+
+  if (nRead > 0) {
+    DEBUG_MIIO("[MIIO]recv string : %s", buffer);
+  }
+  else {
+    DEBUG_MIIO("[MIIO]recv string : null");
+  }
+
+  return nRead;
+}
+
+void MIIO::setReceiveRetry(unsigned int retry)
+{
+  _receiveRetry = retry;
 }

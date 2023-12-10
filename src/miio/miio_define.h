@@ -133,7 +133,7 @@
 /* ==================== common string constants ==================== */
 #define SPACE_CHAR					' '
 #define SPACE_STRING				" "
-#define END_CHAR					'\0'
+#define END_CHAR					'\r'
 #define ERROR_STRING				"error"
 #define OK_STRING				    "ok"
 #define SET_PRO_STRING				"set_properties"
@@ -151,8 +151,6 @@ typedef struct {
 
 typedef int (*miio_fp_cmd_delegate_ack_t)(void* handle, const char* pbuf, size_t buf_sz);
 
-#endif
-
 typedef enum _uart_error_t {
   UART_OK = 0,
   UART_DESTROY_ERROR = -1,
@@ -162,3 +160,21 @@ typedef enum _uart_error_t {
   UART_RECV_ACK_ERROR = -5,
   UART_RECV_ERROR = -6,
 } uart_error_t;
+
+/* buffer used to receive command string from wifi module */
+#define CMD_STR_MAX_LEN             (800) //max 800 byte
+/* max method name register with miio_cmd_method_register() function */
+#define CMD_METHOD_LEN_MAX          (64)
+/* buffer used to response command execute result */
+#define RESULT_BUF_SIZE             CMD_STR_MAX_LEN
+
+#define ACK_BUF_SIZE                CMD_STR_MAX_LEN
+#define DATA_STRING_MAX_LENGTH      (800)
+
+#define RINGBUFF_LEN                (1000) //USER_UART_RXBUF_SIZE
+
+/* user uart configurations */
+#define USER_UART_RXBUF_SIZE        (256)
+#define USER_UART_TXBUF_SIZE        (256)
+
+#endif

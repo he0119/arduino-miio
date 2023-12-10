@@ -2,6 +2,7 @@
 #define _MIIO_H_
 
 #include "Arduino.h"
+#include "miio/miio_define.h"
 
 #ifndef NODEBUG_MIIO
 #ifdef DEBUG_ESP_PORT
@@ -44,21 +45,26 @@ public:
   */
   void setPollInterval(unsigned long interval);
 
-  String recvStr();
+  void setReceiveRetry(unsigned int retry);
 
-  int sendStr(const char* str);
+  size_t sendStr(const char* str);
 
-  int sendStr(String str);
+  size_t sendStr(String str);
 
-  int sendStrWaitAck(const char* str);
+  size_t sendStrWaitAck(const char* str);
 
-  int sendStrWaitAck(String str);
+  size_t sendStrWaitAck(String str);
 
+  size_t recvStr(char* buffer, size_t length);
 
 private:
   Stream* _serial;
   unsigned long _pollIntervalMs = 200;
   unsigned long _lastPoll = 0;
+  unsigned int _receiveRetry = 25;
+
+  char _pbuf[CMD_STR_MAX_LEN] = { 0 };
+  char _method[CMD_METHOD_LEN_MAX] = { 0 };
 };
 
 #endif
