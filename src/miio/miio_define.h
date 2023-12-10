@@ -152,3 +152,13 @@ typedef struct {
 typedef int (*miio_fp_cmd_delegate_ack_t)(void* handle, const char* pbuf, size_t buf_sz);
 
 #endif
+
+typedef enum _uart_error_t {
+  UART_OK = 0,
+  UART_DESTROY_ERROR = -1,
+  UART_OPEN_ERROR = -2,
+  UART_SET_ARRT_ERROR = -3,
+  UART_SEND_ERROR = -4,
+  UART_RECV_ACK_ERROR = -5,
+  UART_RECV_ERROR = -6,
+} uart_error_t;

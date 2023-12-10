@@ -28,6 +28,16 @@ public:
   */
   void setPollInterval(unsigned long interval);
 
+  String recvStr(unsigned long timeout = 0);
+
+  int sendStr(const char* str);
+
+  int sendStr(String str);
+
+  int sendStrWaitAck(const char* str);
+
+  int sendStrWaitAck(String str);
+
 
 private:
   Stream* _serial;
