@@ -1,11 +1,13 @@
 #include <MIIO.h>
-MIIO miio(Serial1);
+MIIO miio(Serial);
 
 void setup() {
   Serial.begin(115200);
-  Serial1.begin(115200);
 
-  miio.begin("model", "mcu_version", "ble_pid");
+  miio.setPollInterval(2000);
+  miio.setSerialTimeout(2000);
+
+  miio.begin("perdev.switch.004", "18031", "0001");
 }
 
 void loop() {
