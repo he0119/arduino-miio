@@ -70,14 +70,14 @@ public:
 
   void setReceiveRetry(unsigned int retry);
 
-  int onMethod(String method, MethodCallback callback);
+  void onMethod(String method, MethodCallback callback);
 
-  int onActionInvoke(
-      uint32_t siid, uint32_t aiid, ActionInvokeCallback callback);
+  void
+  onActionInvoke(uint32_t siid, uint32_t aiid, ActionInvokeCallback callback);
 
-  int onPropertyGet(uint32_t siid, uint32_t piid, PropertyCallback callback);
+  void onPropertyGet(uint32_t siid, uint32_t piid, PropertyCallback callback);
 
-  int onPropertySet(uint32_t siid, uint32_t piid, PropertyCallback callback);
+  void onPropertySet(uint32_t siid, uint32_t piid, PropertyCallback callback);
 
   MethodCallback callbackFindByMethod(const char *method);
 

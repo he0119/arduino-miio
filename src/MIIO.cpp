@@ -306,47 +306,39 @@ int MIIO::executePropertyChanged(property_operation_t *opt) {
   return ret;
 }
 
-int MIIO::onMethod(String method, MethodCallback callback) {
+void MIIO::onMethod(String method, MethodCallback callback) {
   if (method.isEmpty() || callback == NULL) {
-    return MIIO_ERROR_PARAM;
+    return;
   }
 
   _methodCallbacks[method] = callback;
-
-  return MIIO_OK;
 }
 
-int MIIO::onActionInvoke(
+void MIIO::onActionInvoke(
     uint32_t siid, uint32_t aiid, ActionInvokeCallback callback) {
   if (callback == NULL) {
-    return MIIO_ERROR_PARAM;
+    return;
   }
 
   _actionInvokeCallbacks[{siid, aiid}] = callback;
-
-  return MIIO_OK;
 }
 
-int MIIO::onPropertyGet(
+void MIIO::onPropertyGet(
     uint32_t siid, uint32_t piid, PropertyCallback callback) {
   if (callback == NULL) {
-    return MIIO_ERROR_PARAM;
+    return;
   }
 
   _propertyGetCallbacks[{siid, piid}] = callback;
-
-  return MIIO_OK;
 }
 
-int MIIO::onPropertySet(
+void MIIO::onPropertySet(
     uint32_t siid, uint32_t piid, PropertyCallback callback) {
   if (callback == NULL) {
-    return MIIO_ERROR_PARAM;
+    return;
   }
 
   _propertySetCallbacks[{siid, piid}] = callback;
-
-  return MIIO_OK;
 }
 
 ActionInvokeCallback MIIO::callbackFindByAction(uint32_t siid, uint32_t aiid) {
