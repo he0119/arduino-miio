@@ -79,4 +79,8 @@ enum uart_error_t {
 #define ERROR_CODE_UNCMD -9999
 #define ERROR_CODE_UNPARAMS -9998
 
+#define USER_POLL_INTERVAL_MS (200)
+#define USER_UART_TIMEOUT_MS (200)
+#define USER_RECEIVE_RETRY (25)
+
 #endif

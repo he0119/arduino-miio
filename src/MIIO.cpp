@@ -22,6 +22,8 @@
 
 MIIO::MIIO(Stream &serial) {
   _serial = &serial;
+  // 默认串口超时时间 200ms
+  _serial->setTimeout(USER_UART_TIMEOUT_MS);
 
   // 注册默认的回调函数
   // 用于处理 get_properties/set_properties/action

@@ -138,12 +138,14 @@ public:
 
 private:
   Stream *_serial;
-  unsigned long _pollIntervalMs = 200;
+
   unsigned long _lastPoll = 0;
-  unsigned int _receiveRetry = 25;
+  unsigned long _pollIntervalMs = USER_POLL_INTERVAL_MS;
+  unsigned int _receiveRetry = USER_RECEIVE_RETRY;
 
   char _pbuf[CMD_STR_MAX_LEN] = {0};
   char _method[CMD_METHOD_LEN_MAX] = {0};
+
   std::map<String, MethodCallback> _methodCallbacks;
   std::map<std::pair<uint32_t, uint32_t>, PropertyCallback>
       _propertyGetCallbacks;
