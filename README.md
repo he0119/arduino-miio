@@ -54,3 +54,7 @@ New-Item -ItemType SymbolicLink -Path "MIIO" -Target <arduino-miio 项目文件�
 ```
 
 这样才能正确编译示例项目并生成 `c_cpp_properties.json`。
+
+## 鸣谢
+
+- 部分代码参考小米提供的 [示例代码](https://cdn.cnbj1.fds.api.mi-img.com/miot-images/b606e0a051c0494c2ab785a2c2482fff_1701254221009.zip)
