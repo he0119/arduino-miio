@@ -238,7 +238,36 @@ int MIIO::sendPropertyChanged(
 }
 
 int MIIO::executePropertyChanged(property_operation_t &opt) {
-  return 0;
+  int ret = MIIO_OK;
+
+  char out[RESULT_BUF_SIZE] = {0};
+  memset(out, 0, RESULT_BUF_SIZE);
+
+  changedOperationEncode(opt, out, RESULT_BUF_SIZE);
+  int n_send = sendStr(out);
+  if (n_send <= 0) {
+    DEBUG_MIIO("[MIIO]property changed send failed");
+    ret = MIIO_ERROR;
+    return ret;
+  }
+
+  char res[RESULT_BUF_SIZE] = {0};
+  memset(res, 0, RESULT_BUF_SIZE);
+
+  int n_read = recvStr(res, RESULT_BUF_SIZE);
+  if (n_read <= 0) {
+    DEBUG_MIIO("[MIIO]property changed send failed");
+    ret = MIIO_ERROR;
+    return ret;
+  }
+
+  if (0 != strncmp(res, "ok", strlen("ok"))) {
+    DEBUG_MIIO("[MIIO]property changed send failed");
+    ret = MIIO_ERROR;
+    return ret;
+  }
+
+  return ret;
 }
 
 int MIIO::uartComamndDecoder(
@@ -317,4 +346,72 @@ MethodCallback MIIO::callbackFindByMethod(const char *method) {
   }
 
   return it->second;
+}
+
+int MIIO::changedOperationEncodeEnd(char out[], size_t size) {
+  int ret = MIIO_OK;
+
+  if (strlen(out) > size - 1) {
+    ret = MIIO_ERROR;
+    return ret;
+  }
+
+  str_n_cat(out, 1, "\r");
+
+  return ret;
+}
+
+int MIIO::changedOperationEncode(
+    property_operation_t &opt, char out[], size_t size) {
+  memset(out, 0, size);
+  str_n_cat(out, 2, "properties_changed", " ");
+
+  char siid_buf[ID_MAX_LEN] = {0};
+  char piid_buf[ID_MAX_LEN] = {0};
+
+  snprintf(siid_buf, ID_MAX_LEN, "%d", opt.siid);
+  snprintf(piid_buf, ID_MAX_LEN, "%d", opt.piid);
+
+  str_n_cat(out, 4, siid_buf, " ", piid_buf, " ");
+
+  switch (opt.value->format) {
+  case PROPERTY_FORMAT_BOOLEAN: {
+    if (opt.value->data.boolean.value == false) {
+      str_n_cat(out, 2, "false", " ");
+    } else {
+      str_n_cat(out, 2, "true", " ");
+    }
+  } break;
+
+  case PROPERTY_FORMAT_STRING: {
+    str_n_cat(out, 2, opt.value->data.string.value, " ");
+  } break;
+
+  case PROPERTY_FORMAT_NUMBER: {
+    if (opt.value->data.number.type == DATA_NUMBER_INTEGER) {
+      char integer_buf[VALUE_MAX_LEN] = {0};
+      snprintf(
+          integer_buf,
+          VALUE_MAX_LEN,
+          "%d",
+          (int)opt.value->data.number.value.integerValue);
+      str_n_cat(out, 2, integer_buf, " ");
+    } else if (opt.value->data.number.type == DATA_NUMBER_FLOAT) {
+      char float_buf[VALUE_MAX_LEN] = {0};
+      snprintf(
+          float_buf,
+          VALUE_MAX_LEN,
+          "%f",
+          opt.value->data.number.value.floatValue);
+      str_n_cat(out, 2, float_buf, " ");
+    }
+  } break;
+
+  case PROPERTY_FORMAT_UNDEFINED:
+    break;
+  }
+
+  changedOperationEncodeEnd(out, size);
+
+  return MIIO_OK;
 }
