@@ -84,7 +84,6 @@ action_operation_decode(const char *pbuf, size_t buf_sz, uint32_t index) {
   } while (false);
 
   if (ret != MIIO_OK) {
-    LOG_ERROR("ready to delete property value");
     action_operation_delete(thiz);
     thiz = NULL;
   }

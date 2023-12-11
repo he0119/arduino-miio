@@ -114,7 +114,6 @@ property_operation_t *miio_property_operation_decode(
   } while (false);
 
   if (ret != MIIO_OK) {
-    LOG_ERROR("ready to delete property value");
     miio_property_operation_delete(thiz);
     thiz = NULL;
   }
