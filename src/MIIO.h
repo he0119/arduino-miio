@@ -30,6 +30,7 @@
 #define DEBUG_MIIO(...)               \
     {                                       \
         DEBUG_ESP_PORT.printf(__VA_ARGS__); \
+        DEBUG_ESP_PORT.println();           \
         DEBUG_ESP_PORT.flush();             \
     }
 #endif
