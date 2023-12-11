@@ -2,7 +2,7 @@
 #define _MIIO_H_
 
 #include "Arduino.h"
-#include <vector>
+#include <map>
 
 /* ==================== debug define ==================== */
 #ifndef NODEBUG_MIIO
@@ -71,12 +71,6 @@ typedef enum _uart_error_t {
 
 /* ==================== function define ==================== */
 typedef std::function<int(char* cmd, size_t length)> MethodCallback;
-struct MIIOCommand
-{
-  const char* method;
-  MethodCallback callback;
-};
-
 
 class MIIO
 {
@@ -104,9 +98,9 @@ public:
 
   void setReceiveRetry(unsigned int retry);
 
-  int onCommand(const char* method, MethodCallback callback);
+  int onCommand(String method, MethodCallback callback);
 
-  MIIOCommand miio_command_find_by_method(const char* method);
+  MethodCallback callback_find_by_method(const char* method);
 
   size_t sendStr(const char* str);
 
@@ -128,7 +122,7 @@ private:
 
   char _pbuf[CMD_STR_MAX_LEN] = { 0 };
   char _method[CMD_METHOD_LEN_MAX] = { 0 };
-  std::vector<MIIOCommand> _commands[10];
+  std::map<String, MethodCallback> _commands;
 };
 
 #endif

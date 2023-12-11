@@ -66,15 +66,15 @@ void MIIO::loop()
   }
 
   if (methodLen > 0 && _method != NULL) { /* start to find if method contained */
-    auto cmd = miio_command_find_by_method(_method);
-    if (NULL == cmd.method || NULL == cmd.callback) {
+    auto callback = callback_find_by_method(_method);
+    if (NULL == callback) {
       if (strcmp(ERROR_STRING, _method) && strcmp(OK_STRING, _method)) {
         DEBUG_MIIO("[MIIO]undefined command: %s\n", _method);
       }
     }
     else {
       DEBUG_MIIO("[MIIO]found method: %s\n", _method);
-      cmd.callback(_pbuf, nRecv);
+      callback(_pbuf, nRecv);
     }
   }
   else {
@@ -227,36 +227,27 @@ error_exit:
   }
 }
 
-int MIIO::onCommand(const char* method, MethodCallback callback)
+int MIIO::onCommand(String method, MethodCallback callback)
 {
-  if (method == NULL || callback == NULL) {
+  if (method.isEmpty() || callback == NULL) {
     return MIIO_ERROR_PARAM;
   }
 
-  MIIOCommand cmd;
-  cmd.method = method;
-  cmd.callback = callback;
-
-  _commands->push_back(cmd);
+  _commands[method] = callback;
 
   return MIIO_OK;
 }
 
-MIIOCommand MIIO::miio_command_find_by_method(const char* method)
+MethodCallback MIIO::callback_find_by_method(const char* method)
 {
-  MIIOCommand cmd;
-  cmd.method = NULL;
-  cmd.callback = NULL;
-
   if (method == NULL) {
-    return cmd;
+    return NULL;
   }
 
-  for (auto it = _commands->begin(); it != _commands->end(); ++it) {
-    if (strcmp(it->method, method) == 0) {
-      return *it;
-    }
+  auto it = _commands.find(method);
+  if (it == _commands.end()) {
+    return NULL;
   }
 
-  return cmd;
+  return it->second;
 }
