@@ -104,6 +104,8 @@ public:
 
   size_t recvStr(char* buffer, size_t length);
 
+  int uart_comamnd_decoder(char* pbuf, size_t buf_sz, char* method, size_t* methodLen);
+
 private:
   Stream* _serial;
   unsigned long _pollIntervalMs = 200;

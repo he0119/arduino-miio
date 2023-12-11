@@ -34,6 +34,10 @@ void MIIO::loop()
   }
   _lastPoll = millis();
 
+  /* clear command string buffer */
+  memset(_pbuf, 0, CMD_STR_MAX_LEN);
+  memset(_method, 0, CMD_METHOD_LEN_MAX);
+
   sendStr("get_down\r");
 
   // FIXME: 目前会卡住 loop，直到超时
@@ -50,15 +54,33 @@ void MIIO::loop()
     return;
   }
 
-  // unsigned int methodLen = sizeof(_method);
-  // int ret;
+  size_t methodLen = sizeof(_method);
+  int ret;
 
-  // ret = uart_comamnd_decoder(_pbuf, nRecv, _method, &methodLen);
-  // if (MIIO_OK != ret) { /* judge if string decoded correctly */
-  //   DEBUG_MIIO("[MIIO]get method failed[%s]", _pbuf);
-  //   ret = MIIO_ERROR_PARAM;
-  //   return;
-  // }
+  ret = uart_comamnd_decoder(_pbuf, nRecv, _method, &methodLen);
+  if (MIIO_OK != ret) { /* judge if string decoded correctly */
+    DEBUG_MIIO("[MIIO]get method failed[%s]\n", _pbuf);
+    ret = MIIO_ERROR_PARAM;
+    return;
+  }
+
+  if (methodLen > 0 && _method != NULL) { /* start to find if method contained */
+    // miio_cmd_t* cmd = miio_command_find_by_method(miio, method);
+    // if (NULL == cmd) {
+    //   if (strcmp(ERROR_STRING, method) && strcmp(OK_STRING, method))
+    //     send_error(miio, ERROR_MESSAGE_UNCMD, ERROR_CODE_UNCMD);
+    // }
+    // else {
+    //   LOG_INFO_TAG(TAG, "found method : %s", method);
+    //   uart_command_config_arg(&arg, pbuf, recv_bytes); /* assembly arg to passed into callback func */
+    //   cmd->cb(handle, &arg, _miio_cmd_ack);	/* execute callback func contained in method finded */
+    // }
+    DEBUG_MIIO("[MIIO]found method : %s\n", _method);
+  }
+  else {
+    ret = MIIO_ERROR_PARAM;
+    DEBUG_MIIO("[MIIO]unknown command : %s\n", (char*)_pbuf);
+  }
 }
 
 void MIIO::setSerialTimeout(unsigned long timeout)
@@ -71,6 +93,10 @@ void MIIO::setPollInterval(unsigned long interval)
   _pollIntervalMs = interval;
 }
 
+void MIIO::setReceiveRetry(unsigned int retry)
+{
+  _receiveRetry = retry;
+}
 
 size_t MIIO::sendStr(const char* str)
 {
@@ -150,16 +176,53 @@ size_t MIIO::recvStr(char* buffer, size_t length)
   buffer[nRead] = '\0';
 
   if (nRead > 0) {
-    DEBUG_MIIO("[MIIO]recv string : %s", buffer);
+    DEBUG_MIIO("[MIIO]recv string : %s\n", buffer);
   }
   else {
-    DEBUG_MIIO("[MIIO]recv string : null");
+    DEBUG_MIIO("[MIIO]recv string : null\n");
   }
 
   return nRead;
 }
 
-void MIIO::setReceiveRetry(unsigned int retry)
+int MIIO::uart_comamnd_decoder(char* pbuf, size_t buf_sz, char* method, size_t* methodLen)
 {
-  _receiveRetry = retry;
+  char* temp = NULL;
+
+  char* cmd_buf = (char*)malloc(buf_sz);
+  if (NULL == cmd_buf || NULL == pbuf) {
+    goto error_exit;
+  }
+
+  strncpy(cmd_buf, pbuf, buf_sz);
+  cmd_buf[buf_sz - 1] = SPACE_CHAR;
+
+  temp = strtok(cmd_buf, SPACE_STRING);	/* pass "down" */
+  if (NULL == temp) { goto error_exit; }
+
+  /* judge if recieved "error\r" */
+  if (!strncmp(temp, ERROR_STRING, strlen(ERROR_STRING) < strlen(temp) ? strlen(ERROR_STRING) : strlen(temp))) { goto error_exit; }
+  else if (NULL == temp) { goto error_exit; }
+
+  /* get "get_properties"/"set_properties"/"none"/"update_fw"/"action" */
+  temp = strtok(NULL, SPACE_STRING);
+  if (NULL == temp) { goto error_exit; }
+
+normal_exit:
+  {
+    strncpy(method, temp, strlen(temp));
+    *methodLen = strlen(method);
+
+    if (NULL != cmd_buf) { free(cmd_buf); }
+    return MIIO_OK;
+  }
+
+error_exit:
+  {
+    method = NULL;
+    *methodLen = 0;
+    if (NULL != cmd_buf) { free(cmd_buf); }
+
+    return MIIO_ERROR_PARAM;
+  }
 }
