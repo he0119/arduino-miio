@@ -218,12 +218,12 @@ int MIIO::sendPropertyChanged(
   int ret = 0;
   DEBUG_MIIO("[MIIO]=============== property changed ===============");
 
+  property_operation_t *opt = NULL;
+
   if (NULL == newValue) {
     ret = MIIO_ERROR_PARAM;
     return ret;
   }
-
-  property_operation_t *opt = NULL;
 
   do {
     opt = miio_property_operation_new();
