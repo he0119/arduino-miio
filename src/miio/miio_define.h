@@ -20,6 +20,8 @@
 #ifndef __MIIO_DEFINE_H__
 #define __MIIO_DEFINE_H__
 
+#include "Arduino.h"
+
 /* ==================== error define ==================== */
 #define MIIO_OK (0)             /* There is no error		*/
 #define MIIO_ERROR (-1)         /* A generic error happens	*/
@@ -66,9 +68,6 @@ enum uart_error_t {
 
 #define ACK_BUF_SIZE CMD_STR_MAX_LEN
 #define DATA_STRING_MAX_LENGTH (800)
-
-/* ==================== function define ==================== */
-typedef std::function<int(char *cmd, size_t length)> MethodCallback;
 
 /* ==================== operation define ==================== */
 #define ID_MAX_LEN 4

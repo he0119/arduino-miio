@@ -24,36 +24,16 @@
 #include "property_data.h"
 #include "property_format.h"
 
-struct property_value_t {
+typedef struct _property_value {
   property_format_t format;
   property_data_t data;
+} property_value_t;
 
-  property_value_t() {
-    format = PROPERTY_FORMAT_UNDEFINED;
-  }
-
-  property_value_t(const char *value) {
-    format = PROPERTY_FORMAT_STRING;
-    strncpy(data.string.value, value, DATA_STRING_MAX_LENGTH);
-    data.string.length = strlen(value);
-  }
-
-  property_value_t(long value) {
-    format = PROPERTY_FORMAT_NUMBER;
-    data.number.type = DATA_NUMBER_INTEGER;
-    data.number.value.integerValue = value;
-  }
-
-  property_value_t(float value) {
-    format = PROPERTY_FORMAT_NUMBER;
-    data.number.type = DATA_NUMBER_FLOAT;
-    data.number.value.floatValue = value;
-  }
-
-  property_value_t(bool value) {
-    format = PROPERTY_FORMAT_BOOLEAN;
-    data.boolean.value = value;
-  }
-};
+property_value_t *property_value_new(void);
+property_value_t *property_value_new_string(const char *value);
+property_value_t *property_value_new_integer(long value);
+property_value_t *property_value_new_float(float value);
+property_value_t *property_value_new_boolean(bool value);
+void property_value_delete(property_value_t *thiz);
 
 #endif /* __PROPERTY_VALUE_H__ */

@@ -16,16 +16,12 @@
  *    limitations under the License.
  */
 
-#ifndef __ARGUMENTS_H__
-#define __ARGUMENTS_H__
+#ifndef __PROPERTY_OPERATION_DECODER_H__
+#define __PROPERTY_OPERATION_DECODER_H__
 
-#include "argument.h"
+#include "miio/device/typedef/property_operation.h"
 
-#define MAX_ARGUMENTS 5
+property_operation_t *miio_property_operation_decode(
+    const char *pbuf, size_t buf_sz, uint32_t index, bool hasValue);
 
-struct arguments_t {
-  int size;
-  argument_t arguments[MAX_ARGUMENTS];
-};
-
-#endif /* __ARGUMENTS_H__ */
+#endif /* __PROPERTY_OPERATION_DECODER_H__ */

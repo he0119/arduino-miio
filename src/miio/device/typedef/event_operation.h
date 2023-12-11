@@ -16,14 +16,18 @@
  *    limitations under the License.
  */
 
-#ifndef __ARGUMENT_H__
-#define __ARGUMENT_H__
+#ifndef __EVENT_OPERATION_H__
+#define __EVENT_OPERATION_H__
 
-#include "property_value.h"
+#include "arguments.h"
 
-struct argument_t {
-  uint32_t piid;
-  property_value_t *value;
-};
+typedef struct _event_operation {
+  uint32_t siid;
+  uint32_t eiid;
+  arguments_t *arguments;
+} event_operation_t;
 
-#endif /* __ARGUMENT_H__ */
+event_operation_t *event_operation_new(void);
+void event_operation_delete(event_operation_t *thiz);
+
+#endif /* __EVENT_OPERATION_H__ */

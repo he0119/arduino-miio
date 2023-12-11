@@ -20,7 +20,7 @@
 
 #include "Arduino.h"
 
-#include "util.h"
+#include "miio/util/util.h"
 
 void str_n_cat(char *pDst, int n_str, ...) {
   va_list list;

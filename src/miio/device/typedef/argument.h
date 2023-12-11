@@ -16,17 +16,17 @@
  *    limitations under the License.
  */
 
-#ifndef __PROPERTY_FORMAT_H__
-#define __PROPERTY_FORMAT_H__
+#ifndef __ARGUMENT_H__
+#define __ARGUMENT_H__
 
-#define MAX_NUMBER_LENGTH 64
-#define MAX_BOOLEAN_LENGTH 8
+#include "property_value.h"
 
-enum property_format_t {
-  PROPERTY_FORMAT_UNDEFINED = 0,
-  PROPERTY_FORMAT_BOOLEAN = 1,
-  PROPERTY_FORMAT_STRING = 2,
-  PROPERTY_FORMAT_NUMBER = 3,
-};
+typedef struct _argument {
+  uint32_t piid;
+  property_value_t *value;
+} argument_t;
 
-#endif /* __PROPERTY_FORMAT_H__ */
+argument_t *argument_new(void);
+void argument_delete(argument_t *thiz);
+
+#endif /* __ARGUMENT_H__ */

@@ -16,38 +16,12 @@
  *    limitations under the License.
  */
 
-#ifndef __PROPERTY_DATA_H__
-#define __PROPERTY_DATA_H__
+#ifndef __EVENT_OPERATION_ENCODER_H__
+#define __EVENT_OPERATION_ENCODER_H__
 
-#include "miio/miio_define.h"
-struct data_boolean_t {
-  bool value;
-};
+#include "miio/device/typedef/event_operation.h"
 
-struct data_string_t {
-  char value[DATA_STRING_MAX_LENGTH + 1];
-  uint32_t length;
-};
+int miio_event_operation_encode(
+    event_operation_t *opt, char out[], size_t size);
 
-struct data_number_value_t {
-  long integerValue;
-  float floatValue;
-};
-
-enum data_number_type_t {
-  DATA_NUMBER_INTEGER = 0,
-  DATA_NUMBER_FLOAT = 1,
-};
-
-struct data_number_t {
-  data_number_type_t type;
-  data_number_value_t value;
-};
-
-union property_data_t {
-  data_boolean_t boolean;
-  data_string_t string;
-  data_number_t number;
-};
-
-#endif /* __PROPERTY_DATA_H__ */
+#endif /* __EVENT_OPERATION_ENCODER_H__ */
