@@ -330,7 +330,7 @@ int MIIO::onCommand(String method, MethodCallback callback) {
     return MIIO_ERROR_PARAM;
   }
 
-  _commands[method] = callback;
+  _methodCallbacks[method] = callback;
 
   return MIIO_OK;
 }
@@ -340,8 +340,8 @@ MethodCallback MIIO::callbackFindByMethod(const char *method) {
     return NULL;
   }
 
-  auto it = _commands.find(method);
-  if (it == _commands.end()) {
+  auto it = _methodCallbacks.find(method);
+  if (it == _methodCallbacks.end()) {
     return NULL;
   }
 
