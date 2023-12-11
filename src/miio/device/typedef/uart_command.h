@@ -1,4 +1,6 @@
 /**
+ * @author  MIoT
+ * @date    2019
  * @par     Copyright (c):
  *
  *    Copyright 2019 MIoT,MI
@@ -16,21 +18,24 @@
  *    limitations under the License.
  */
 
-#ifndef __PROPERTY_OPERATION_H__
-#define __PROPERTY_OPERATION_H__
+#ifndef __UART_COMMAND_H__
+#define __UART_COMMAND_H__
 
-#include "property_value.h"
+#include "arch_os.h"
+#include "list.h"
+#include "miio/miio_define.h"
 
-enum property_operation_type {
-  PROPERTY_OPERATION_GET = 0,
-  PROPERTY_OPERATION_SET = 1,
-};
+typedef int (*miio_fp_cmd_handle_t)(
+    void *handle,
+    miio_cmd_delegate_arg_t *req_arg,
+    miio_fp_cmd_delegate_ack_t ack);
 
-struct property_operation_t {
-  uint32_t siid;
-  uint32_t piid;
-  int code;
-  property_value_t *value;
-};
+typedef struct _miio_cmd {
+  list_head_t list;
+  arch_os_mutex mutex;
+  char method[CMD_METHOD_LEN_MAX];
+  char loop_flag;
+  miio_fp_cmd_handle_t cb;
+} miio_cmd_t;
 
-#endif /* __PROPERTY_OPERATION_H__ */
+#endif

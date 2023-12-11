@@ -4,11 +4,17 @@
 #include <map>
 
 #include "Arduino.h"
-#include "miio/miio_define.h"
 
-#include "miio/typedef/property_operation.h"
-#include "miio/typedef/property_value.h"
+extern "C" {
+#include "miio/device/codec/property_changed_encoder.h"
+#include "miio/device/codec/property_operation_decoder.h"
+#include "miio/device/codec/property_operation_encoder.h"
+#include "miio/device/codec/uart_command_decoder.h"
+#include "miio/device/typedef/property_operation.h"
+#include "miio/device/typedef/property_value.h"
+#include "miio/miio_define.h"
 #include "miio/util/util.h"
+}
 
 /* ==================== debug define ==================== */
 #ifndef NODEBUG_MIIO
@@ -28,6 +34,9 @@
 #define NODEBUG_MIIO
 #endif
 #endif
+
+/* ==================== function define ==================== */
+typedef std::function<int(char *cmd, size_t length)> MethodCallback;
 
 class MIIO {
 public:
@@ -71,14 +80,7 @@ public:
   int sendPropertyChanged(
       uint32_t siid, uint32_t piid, property_value_t *newValue);
 
-  int executePropertyChanged(property_operation_t &opt);
-
-  int changedOperationEncodeEnd(char out[], size_t size);
-  int changedOperationEncode(
-      property_operation_t &opt, char out[], size_t size);
-
-  int uartComamndDecoder(
-      char *pbuf, size_t buf_sz, char *method, size_t *methodLen);
+  int executePropertyChanged(property_operation_t *opt);
 
 private:
   Stream *_serial;

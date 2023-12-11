@@ -16,15 +16,19 @@
  *    limitations under the License.
  */
 
-#ifndef __EVENT_OPERATION_H__
-#define __EVENT_OPERATION_H__
+#ifndef __ARGUMENTS_H__
+#define __ARGUMENTS_H__
 
-#include "arguments.h"
+#include "argument.h"
 
-struct event_operation_t {
-  uint32_t siid;
-  uint32_t eiid;
-  arguments_t *arguments;
-};
+#define MAX_ARGUMENTS 5
 
-#endif /* __EVENT_OPERATION_H__ */
+typedef struct _arguments {
+  int size;
+  argument_t arguments[MAX_ARGUMENTS];
+} arguments_t;
+
+arguments_t *arguments_new(void);
+void arguments_delete(arguments_t *thiz);
+
+#endif /* __ARGUMENTS_H__ */

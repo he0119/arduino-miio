@@ -15,7 +15,7 @@ void setup() {
 int getPropertiesCallback(char *cmd, size_t length) {
   DEBUG_MIIO("[USER]get properties: %s\n", cmd);
 
-  property_value_t *properties = new property_value_t(true);
+  auto *properties = property_value_new_boolean(true);
 
   miio.sendPropertyChanged(1, 1, properties);
 

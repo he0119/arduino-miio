@@ -91,7 +91,7 @@ void MIIO::loop() {
   size_t methodLen = sizeof(_method);
   int ret;
 
-  ret = uartComamndDecoder(_pbuf, nRecv, _method, &methodLen);
+  ret = uart_comamnd_decoder(_pbuf, nRecv, _method, &methodLen);
   if (MIIO_OK != ret) { /* judge if string decoded correctly */
     DEBUG_MIIO("[MIIO]get method failed[%s]", _pbuf);
     ret = MIIO_ERROR_PARAM;
@@ -223,8 +223,15 @@ int MIIO::sendPropertyChanged(
     return ret;
   }
 
-  property_operation_t opt = {
-      .siid = 0, .piid = 0, .code = 0, .value = newValue};
+  property_operation_t *opt = NULL;
+
+  do {
+    opt = miio_property_operation_new();
+    opt->code = 0;
+    opt->siid = siid;
+    opt->piid = piid;
+    opt->value = newValue;
+  } while (false);
 
   ret = executePropertyChanged(opt);
 
@@ -234,16 +241,18 @@ int MIIO::sendPropertyChanged(
     DEBUG_MIIO("[MIIO]======== send property changed success =========");
   }
 
+  miio_property_operation_delete(opt);
+
   return ret;
 }
 
-int MIIO::executePropertyChanged(property_operation_t &opt) {
+int MIIO::executePropertyChanged(property_operation_t *opt) {
   int ret = MIIO_OK;
 
   char out[RESULT_BUF_SIZE] = {0};
   memset(out, 0, RESULT_BUF_SIZE);
 
-  changedOperationEncode(opt, out, RESULT_BUF_SIZE);
+  miio_changed_operation_encode(opt, out, RESULT_BUF_SIZE);
   int n_send = sendStr(out);
   if (n_send <= 0) {
     DEBUG_MIIO("[MIIO]property changed send failed");
@@ -270,61 +279,6 @@ int MIIO::executePropertyChanged(property_operation_t &opt) {
   return ret;
 }
 
-int MIIO::uartComamndDecoder(
-    char *pbuf, size_t buf_sz, char *method, size_t *methodLen) {
-  char *temp = NULL;
-
-  char *cmd_buf = (char *)malloc(buf_sz);
-  if (NULL == cmd_buf || NULL == pbuf) {
-    goto error_exit;
-  }
-
-  strncpy(cmd_buf, pbuf, buf_sz);
-  cmd_buf[buf_sz - 1] = SPACE_CHAR;
-
-  temp = strtok(cmd_buf, SPACE_STRING); /* pass "down" */
-  if (NULL == temp) {
-    goto error_exit;
-  }
-
-  /* judge if recieved "error\r" */
-  if (!strncmp(
-          temp,
-          ERROR_STRING,
-          strlen(ERROR_STRING) < strlen(temp) ? strlen(ERROR_STRING)
-                                              : strlen(temp))) {
-    goto error_exit;
-  } else if (NULL == temp) {
-    goto error_exit;
-  }
-
-  /* get "get_properties"/"set_properties"/"none"/"update_fw"/"action" */
-  temp = strtok(NULL, SPACE_STRING);
-  if (NULL == temp) {
-    goto error_exit;
-  }
-
-normal_exit: {
-  strncpy(method, temp, strlen(temp));
-  *methodLen = strlen(method);
-
-  if (NULL != cmd_buf) {
-    free(cmd_buf);
-  }
-  return MIIO_OK;
-}
-
-error_exit: {
-  method = NULL;
-  *methodLen = 0;
-  if (NULL != cmd_buf) {
-    free(cmd_buf);
-  }
-
-  return MIIO_ERROR_PARAM;
-}
-}
-
 int MIIO::onCommand(String method, MethodCallback callback) {
   if (method.isEmpty() || callback == NULL) {
     return MIIO_ERROR_PARAM;
@@ -346,72 +300,4 @@ MethodCallback MIIO::callbackFindByMethod(const char *method) {
   }
 
   return it->second;
-}
-
-int MIIO::changedOperationEncodeEnd(char out[], size_t size) {
-  int ret = MIIO_OK;
-
-  if (strlen(out) > size - 1) {
-    ret = MIIO_ERROR;
-    return ret;
-  }
-
-  str_n_cat(out, 1, "\r");
-
-  return ret;
-}
-
-int MIIO::changedOperationEncode(
-    property_operation_t &opt, char out[], size_t size) {
-  memset(out, 0, size);
-  str_n_cat(out, 2, "properties_changed", " ");
-
-  char siid_buf[ID_MAX_LEN] = {0};
-  char piid_buf[ID_MAX_LEN] = {0};
-
-  snprintf(siid_buf, ID_MAX_LEN, "%d", opt.siid);
-  snprintf(piid_buf, ID_MAX_LEN, "%d", opt.piid);
-
-  str_n_cat(out, 4, siid_buf, " ", piid_buf, " ");
-
-  switch (opt.value->format) {
-  case PROPERTY_FORMAT_BOOLEAN: {
-    if (opt.value->data.boolean.value == false) {
-      str_n_cat(out, 2, "false", " ");
-    } else {
-      str_n_cat(out, 2, "true", " ");
-    }
-  } break;
-
-  case PROPERTY_FORMAT_STRING: {
-    str_n_cat(out, 2, opt.value->data.string.value, " ");
-  } break;
-
-  case PROPERTY_FORMAT_NUMBER: {
-    if (opt.value->data.number.type == DATA_NUMBER_INTEGER) {
-      char integer_buf[VALUE_MAX_LEN] = {0};
-      snprintf(
-          integer_buf,
-          VALUE_MAX_LEN,
-          "%d",
-          (int)opt.value->data.number.value.integerValue);
-      str_n_cat(out, 2, integer_buf, " ");
-    } else if (opt.value->data.number.type == DATA_NUMBER_FLOAT) {
-      char float_buf[VALUE_MAX_LEN] = {0};
-      snprintf(
-          float_buf,
-          VALUE_MAX_LEN,
-          "%f",
-          opt.value->data.number.value.floatValue);
-      str_n_cat(out, 2, float_buf, " ");
-    }
-  } break;
-
-  case PROPERTY_FORMAT_UNDEFINED:
-    break;
-  }
-
-  changedOperationEncodeEnd(out, size);
-
-  return MIIO_OK;
 }
