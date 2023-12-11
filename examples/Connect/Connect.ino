@@ -6,7 +6,7 @@ void setup() {
 
   miio.setPollInterval(5000);
   miio.setSerialTimeout(2000);
-  miio.setReceiveRetry(3);
+  miio.setReceiveRetry(1);
 
   miio.begin("perdev.switch.004", "18031", "0001");
   miio.onCommand(GET_PRO_STRING, getPropertiesCallback);
@@ -15,11 +15,9 @@ void setup() {
 int getPropertiesCallback(char *cmd, size_t length) {
   DEBUG_MIIO("[USER]get properties: %s\n", cmd);
 
-  auto *properties = property_value_new_boolean(true);
+  auto *property = property_value_new_boolean(true);
 
-  miio.sendPropertyChanged(1, 1, properties);
-
-  delete properties;
+  miio.sendPropertyChanged(1, 1, property);
 
   return 0;
 }
