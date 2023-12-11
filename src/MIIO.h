@@ -3,7 +3,8 @@
  * @date    2023
  * @par     Copyright (c):
  *
- *    Copyright 2023 MIoT,MI,uy/sun
+ *    Copyright 2023 uy/sun
+ *    Copyright 2019 MIoT,MI
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
