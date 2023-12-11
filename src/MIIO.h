@@ -49,25 +49,42 @@ class MIIO {
 public:
   MIIO(Stream &serial);
 
+  /**
+   * @brief 小米模组基本设置
+   *
+   * 完成小米模组的基本设置，每次上电后都需要调用此函数。
+   *
+   * @param model 产品型号，如 xiaomi.prod.v2
+   * @param blePid 模组 PID
+   * @param mcuVersion MCU 固件版本
+   */
   void begin(const char *model, const char *blePid, const char *mcuVersion);
 
   void begin(String model, String blePid, String mcuVersion);
 
   void loop();
 
-  /* 串口超时
-
-  单位 ms
-  */
+  /**
+   * @brief 设置串口超时时间
+   * @note 默认为 200 毫秒
+   * @param timeout 超时时间（毫秒）
+   */
   void setSerialTimeout(unsigned long timeout);
 
-  /* 轮询间隔
-
-  时间范围要求 100~200ms，推荐的循环周期为 200ms
-  https://iot.mi.com/v2/new/doc/embedded-dev/module-dev/function-dev/mcu-dev#命令规范
-  */
+  /**
+   * @brief 设置轮询间隔时间。
+   *
+   * @note 时间范围要求 100~200ms，推荐的循环周期为200ms，
+   * https://iot.mi.com/v2/new/doc/embedded-dev/module-dev/function-dev/mcu-dev#命令规范
+   * @param interval 轮询间隔时间，单位为毫秒。
+   */
   void setPollInterval(unsigned long interval);
 
+  /**
+   * @brief 设置接收重试次数
+   *
+   * @param retry 重试次数
+   */
   void setReceiveRetry(unsigned int retry);
 
   void onMethod(String method, MethodCallback callback);
