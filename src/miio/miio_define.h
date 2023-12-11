@@ -55,6 +55,7 @@ enum uart_error_t {
 #define OK_STRING "ok"
 #define SET_PRO_STRING "set_properties"
 #define GET_PRO_STRING "get_properties"
+#define ACTION_STRING "action"
 #define NET_CHANGE_STRING "MIIO_net_change"
 #define NONE_STRING "none"
 
@@ -72,5 +73,10 @@ enum uart_error_t {
 /* ==================== operation define ==================== */
 #define ID_MAX_LEN 4
 #define VALUE_MAX_LEN 16
+
+#define ERROR_MESSAGE_UNCMD "undefined command"
+#define ERROR_MESSAGE_UNPARAMS "error command params"
+#define ERROR_CODE_UNCMD -9999
+#define ERROR_CODE_UNPARAMS -9998
 
 #endif

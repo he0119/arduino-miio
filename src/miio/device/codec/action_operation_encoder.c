@@ -101,11 +101,9 @@ int action_operation_encode_param(
 
 int action_operation_encode_tail(char *pbuf, size_t buf_sz) {
   if (NULL == pbuf) {
-    LOG_ERROR_TAG(TAG, "pbuf is NULL");
     return MIIO_ERROR_EMPTY;
   }
   if (buf_sz <= strlen(pbuf)) {
-    LOG_ERROR_TAG(TAG, "params out of range");
     return MIIO_ERROR_SIZE;
   }
 
