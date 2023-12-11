@@ -1,9 +1,8 @@
 /**
- * @author  MIoT,uy/sun
- * @date    2023
+ * @author  MIoT
+ * @date    2019
  * @par     Copyright (c):
  *
- *    Copyright 2023 uy/sun
  *    Copyright 2019 MIoT,MI
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +17,8 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
+#ifndef __MIIO_DEFINE_H__
+#define __MIIO_DEFINE_H__
 
 /* ==================== error define ==================== */
 #define MIIO_OK (0)             /* There is no error		*/
@@ -69,86 +70,8 @@ enum uart_error_t {
 /* ==================== function define ==================== */
 typedef std::function<int(char *cmd, size_t length)> MethodCallback;
 
-/* ==================== property define ==================== */
-enum property_format_t {
-  PROPERTY_FORMAT_UNDEFINED = 0,
-  PROPERTY_FORMAT_BOOLEAN = 1,
-  PROPERTY_FORMAT_STRING = 2,
-  PROPERTY_FORMAT_NUMBER = 3,
-};
-
-struct data_boolean_t {
-  bool value;
-};
-
-struct data_string_t {
-  char value[DATA_STRING_MAX_LENGTH + 1];
-  uint32_t length;
-};
-
-struct data_number_value_t {
-  long integerValue;
-  float floatValue;
-};
-
-enum data_number_type_t {
-  DATA_NUMBER_INTEGER = 0,
-  DATA_NUMBER_FLOAT = 1,
-};
-
-struct data_number_t {
-  data_number_type_t type;
-  data_number_value_t value;
-};
-
-union property_data_t {
-  data_boolean_t boolean;
-  data_string_t string;
-  data_number_t number;
-};
-struct property_value_t {
-  property_format_t format;
-  property_data_t data;
-
-  property_value_t() {
-    format = PROPERTY_FORMAT_UNDEFINED;
-  }
-
-  property_value_t(const char *value) {
-    format = PROPERTY_FORMAT_STRING;
-    strncpy(data.string.value, value, DATA_STRING_MAX_LENGTH);
-    data.string.length = strlen(value);
-  }
-
-  property_value_t(long value) {
-    format = PROPERTY_FORMAT_NUMBER;
-    data.number.type = DATA_NUMBER_INTEGER;
-    data.number.value.integerValue = value;
-  }
-
-  property_value_t(float value) {
-    format = PROPERTY_FORMAT_NUMBER;
-    data.number.type = DATA_NUMBER_FLOAT;
-    data.number.value.floatValue = value;
-  }
-
-  property_value_t(bool value) {
-    format = PROPERTY_FORMAT_BOOLEAN;
-    data.boolean.value = value;
-  }
-};
-
-enum property_operation_type {
-  PROPERTY_OPERATION_GET = 0,
-  PROPERTY_OPERATION_SET = 1,
-};
-
+/* ==================== operation define ==================== */
 #define ID_MAX_LEN 4
 #define VALUE_MAX_LEN 16
 
-struct property_operation_t {
-  uint32_t siid;
-  uint32_t piid;
-  int code;
-  property_value_t *value;
-};
+#endif

@@ -6,9 +6,9 @@
 #include "Arduino.h"
 #include "miio/miio_define.h"
 
-extern "C" {
-#include "miio/util.h"
-}
+#include "miio/typedef/property_operation.h"
+#include "miio/typedef/property_value.h"
+#include "miio/util/util.h"
 
 /* ==================== debug define ==================== */
 #ifndef NODEBUG_MIIO
@@ -88,7 +88,7 @@ private:
 
   char _pbuf[CMD_STR_MAX_LEN] = {0};
   char _method[CMD_METHOD_LEN_MAX] = {0};
-  std::map<String, MethodCallback> _commands;
+  std::map<String, MethodCallback> _methodCallbacks;
 };
 
 #endif
