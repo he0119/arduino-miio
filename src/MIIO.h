@@ -57,7 +57,7 @@
 #define MIIO_ERROR_SIZE			(-11)
 #define MIIO_ERROR_NOTREADY		(-12)
 
-typedef enum _uart_error_t {
+enum uart_error_t {
   UART_OK = 0,
   UART_DESTROY_ERROR = -1,
   UART_OPEN_ERROR = -2,
@@ -65,7 +65,7 @@ typedef enum _uart_error_t {
   UART_SEND_ERROR = -4,
   UART_RECV_ACK_ERROR = -5,
   UART_RECV_ERROR = -6,
-} uart_error_t;
+};
 
 /* ==================== common string constants ==================== */
 #define SPACE_CHAR					' '
@@ -91,6 +91,71 @@ typedef enum _uart_error_t {
 
 /* ==================== function define ==================== */
 typedef std::function<int(char* cmd, size_t length)> MethodCallback;
+
+
+/* ==================== property define ==================== */
+enum property_format_t
+{
+  PROPERTY_FORMAT_UNDEFINED = 0,
+  PROPERTY_FORMAT_BOOLEAN = 1,
+  PROPERTY_FORMAT_STRING = 2,
+  PROPERTY_FORMAT_NUMBER = 3,
+};
+
+struct data_boolean_t
+{
+  bool value;
+};
+
+struct data_string_t
+{
+  char value[DATA_STRING_MAX_LENGTH + 1];
+  uint32_t length;
+};
+
+struct data_number_value_t
+{
+  long integerValue;
+  float floatValue;
+};
+
+enum data_number_type_t
+{
+  DATA_NUMBER_INTEGER = 0,
+  DATA_NUMBER_FLOAT = 1,
+};
+
+struct data_number_t
+{
+  data_number_type_t  type;
+  data_number_value_t value;
+};
+
+union property_data_t
+{
+  data_boolean_t     boolean;
+  data_string_t      string;
+  data_number_t      number;
+};
+struct property_value_t
+{
+  property_format_t   format;
+  property_data_t     data;
+};
+
+enum property_operation_type
+{
+  PROPERTY_OPERATION_GET = 0,
+  PROPERTY_OPERATION_SET = 1,
+};
+
+struct property_operation_t
+{
+  uint32_t            siid;
+  uint32_t            piid;
+  int                 code;
+  property_value_t* value;
+};
 
 class MIIO
 {
@@ -120,7 +185,7 @@ public:
 
   int onCommand(String method, MethodCallback callback);
 
-  MethodCallback callback_find_by_method(const char* method);
+  MethodCallback callbackFindByMethod(const char* method);
 
   size_t sendStr(const char* str);
 
@@ -132,7 +197,12 @@ public:
 
   size_t recvStr(char* buffer, size_t length);
 
-  int uart_comamnd_decoder(char* pbuf, size_t buf_sz, char* method, size_t* methodLen);
+  int sendPropertyChanged(uint32_t siid, uint32_t piid, property_value_t* newValue);
+
+  int executePropertyChanged(property_operation_t& opt);
+
+  int uartComamndDecoder(char* pbuf, size_t buf_sz, char* method, size_t* methodLen);
+
 
 private:
   Stream* _serial;

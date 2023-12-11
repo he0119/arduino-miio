@@ -205,7 +205,36 @@ size_t MIIO::recvStr(char* buffer, size_t length)
   return nRead;
 }
 
-int MIIO::uart_comamnd_decoder(char* pbuf, size_t buf_sz, char* method, size_t* methodLen)
+int MIIO::sendPropertyChanged(uint32_t siid, uint32_t piid, property_value_t* newValue)
+{
+  int ret = 0;
+  DEBUG_MIIO("[MIIO]=============== property changed ===============");
+
+  if (NULL == newValue) {
+    ret = MIIO_ERROR_PARAM;
+    return ret;
+  }
+
+  property_operation_t opt = { .siid = 0, .piid = 0, .code = 0, .value = newValue };
+
+  ret = executePropertyChanged(opt);
+
+  if (ret != MIIO_OK) {
+    DEBUG_MIIO("[MIIO]========= send property changed failed =========");
+  }
+  else {
+    DEBUG_MIIO("[MIIO]======== send property changed success =========");
+  }
+
+  return ret;
+}
+
+int MIIO::executePropertyChanged(property_operation_t& opt)
+{
+  return 0;
+}
+
+int MIIO::uartComamndDecoder(char* pbuf, size_t buf_sz, char* method, size_t* methodLen)
 {
   char* temp = NULL;
 
@@ -258,7 +287,7 @@ int MIIO::onCommand(String method, MethodCallback callback)
   return MIIO_OK;
 }
 
-MethodCallback MIIO::callback_find_by_method(const char* method)
+MethodCallback MIIO::callbackFindByMethod(const char* method)
 {
   if (method == NULL) {
     return NULL;
