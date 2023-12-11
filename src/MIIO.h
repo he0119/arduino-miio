@@ -2,8 +2,8 @@
 #define _MIIO_H_
 
 #include "Arduino.h"
-#include "miio/miio_define.h"
 
+/* ==================== debug define ==================== */
 #ifndef NODEBUG_MIIO
 #ifdef DEBUG_ESP_PORT
 #define DEBUG_MIIO(...)               \
@@ -20,6 +20,53 @@
 #define NODEBUG_MIIO
 #endif
 #endif
+
+ /* ==================== error define ==================== */
+#define MIIO_OK					(0)		/* There is no error		*/
+#define MIIO_ERROR				(-1)	/* A generic error happens	*/
+#define MIIO_ERROR_TIMEOUT		(-2)	/* Timed out				*/
+#define MIIO_ERROR_FULL			(-3)	/* The resource is full		*/
+#define MIIO_ERROR_EMPTY		(-4)	/* The resource is empty	*/
+#define MIIO_ERROR_NOMEM		(-5)	/* No memory				*/
+#define MIIO_ERROR_NOSYS		(-6)	/* No system				*/
+#define MIIO_ERROR_BUSY			(-7)	/* Busy						*/
+#define MIIO_ERROR_TRYOUT		(-8)	/* Try enough times			*/
+#define MIIO_ERROR_NOTFOUND		(-9)
+#define MIIO_ERROR_PARAM		(-10)
+#define MIIO_ERROR_SIZE			(-11)
+#define MIIO_ERROR_NOTREADY		(-12)
+
+typedef enum _uart_error_t {
+  UART_OK = 0,
+  UART_DESTROY_ERROR = -1,
+  UART_OPEN_ERROR = -2,
+  UART_SET_ARRT_ERROR = -3,
+  UART_SEND_ERROR = -4,
+  UART_RECV_ACK_ERROR = -5,
+  UART_RECV_ERROR = -6,
+} uart_error_t;
+
+/* ==================== common string constants ==================== */
+#define SPACE_CHAR					' '
+#define SPACE_STRING				" "
+#define END_CHAR					'\r'
+#define ERROR_STRING				"error"
+#define OK_STRING				    "ok"
+#define SET_PRO_STRING				"set_properties"
+#define GET_PRO_STRING				"get_properties"
+#define NET_CHANGE_STRING			"MIIO_net_change"
+#define NONE_STRING					"none"
+
+/* ==================== buffer size ==================== */
+/* buffer used to receive command string from wifi module */
+#define CMD_STR_MAX_LEN             (800) //max 800 byte
+/* max method name register with miio_cmd_method_register() function */
+#define CMD_METHOD_LEN_MAX          (64)
+/* buffer used to response command execute result */
+#define RESULT_BUF_SIZE             CMD_STR_MAX_LEN
+
+#define ACK_BUF_SIZE                CMD_STR_MAX_LEN
+#define DATA_STRING_MAX_LENGTH      (800)
 
 class MIIO
 {

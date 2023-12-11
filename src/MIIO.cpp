@@ -1,5 +1,4 @@
 #include "MIIO.h"
-#include "miio/miio_define.h"
 
 MIIO::MIIO(Stream& serial)
 {
