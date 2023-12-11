@@ -66,40 +66,40 @@ void MIIO::loop()
   size_t nRecv = recvStr(_pbuf, CMD_STR_MAX_LEN);
 
   if (nRecv <= 0) {
-    DEBUG_MIIO("[MIIO]uart connected error or module rebooting...\n");
+    DEBUG_MIIO("[MIIO]uart connected error or module rebooting...");
     return;
   }
 
   if (_pbuf[nRecv - 1] != END_CHAR) {
-    DEBUG_MIIO("[MIIO]uart recv error[%s]\n", _pbuf);
+    DEBUG_MIIO("[MIIO]uart recv error[%s]", _pbuf);
     return;
   }
 
   size_t methodLen = sizeof(_method);
   int ret;
 
-  ret = uart_comamnd_decoder(_pbuf, nRecv, _method, &methodLen);
+  ret = uartComamndDecoder(_pbuf, nRecv, _method, &methodLen);
   if (MIIO_OK != ret) { /* judge if string decoded correctly */
-    DEBUG_MIIO("[MIIO]get method failed[%s]\n", _pbuf);
+    DEBUG_MIIO("[MIIO]get method failed[%s]", _pbuf);
     ret = MIIO_ERROR_PARAM;
     return;
   }
 
   if (methodLen > 0 && _method != NULL) { /* start to find if method contained */
-    auto callback = callback_find_by_method(_method);
+    auto callback = callbackFindByMethod(_method);
     if (NULL == callback) {
       if (strcmp(ERROR_STRING, _method) && strcmp(OK_STRING, _method)) {
-        DEBUG_MIIO("[MIIO]undefined command: %s\n", _method);
+        DEBUG_MIIO("[MIIO]undefined command: %s", _method);
       }
     }
     else {
-      DEBUG_MIIO("[MIIO]found method: %s\n", _method);
+      DEBUG_MIIO("[MIIO]found method: %s", _method);
       callback(_pbuf, nRecv);
     }
   }
   else {
     ret = MIIO_ERROR_PARAM;
-    DEBUG_MIIO("[MIIO]unknown command: %s\n", (char*)_pbuf);
+    DEBUG_MIIO("[MIIO]unknown command: %s", (char*)_pbuf);
   }
 }
 
@@ -126,11 +126,11 @@ size_t MIIO::sendStr(const char* str)
   int nSend = _serial->write(str);
 
   if (nSend < len) {
-    DEBUG_MIIO("[MIIO]send string failed\n");
+    DEBUG_MIIO("[MIIO]send string failed");
     return UART_SEND_ERROR;
   }
 
-  DEBUG_MIIO("[MIIO]send string: %s\n", str);
+  DEBUG_MIIO("[MIIO]send string: %s", str);
 
   return nSend;
 }
@@ -148,16 +148,16 @@ size_t MIIO::sendStrWaitAck(const char* str)
   size_t nSend = _serial->write(str);
 
   if (nSend < len) {
-    DEBUG_MIIO("[MIIO]send string failed 1\n");
+    DEBUG_MIIO("[MIIO]send string failed 1");
     return UART_SEND_ERROR;
   }
 
   if (nSend < len) {
-    DEBUG_MIIO("[MIIO]send string failed\n");
+    DEBUG_MIIO("[MIIO]send string failed");
     return UART_SEND_ERROR;
   }
 
-  DEBUG_MIIO("[MIIO]send string: %s\n", str);
+  DEBUG_MIIO("[MIIO]send string: %s", str);
 
   char ackBuf[ACK_BUF_SIZE] = { 0 };
   memset(ackBuf, 0, ACK_BUF_SIZE);
@@ -165,7 +165,7 @@ size_t MIIO::sendStrWaitAck(const char* str)
   recvStr(ackBuf, ACK_BUF_SIZE);
 
   if (0 != strncmp((const char*)ackBuf, "ok", strlen("ok"))) {
-    DEBUG_MIIO("[MIIO]send string wait ack failed 2, str=%s\n", ackBuf);
+    DEBUG_MIIO("[MIIO]send string wait ack failed 2, str=%s", ackBuf);
     return UART_RECV_ACK_ERROR;
   }
 
@@ -184,7 +184,7 @@ size_t MIIO::recvStr(char* buffer, size_t length)
   int retry = 0;
   while (buffer[nRead > 0 ? (nRead - 1) : 0] != END_CHAR && retry < _receiveRetry) {
     if (nRead >= length) {
-      DEBUG_MIIO("[MIIO]out of buffer %d %d retry=%d\n", length, nRead, retry);
+      DEBUG_MIIO("[MIIO]out of buffer %d %d retry=%d", length, nRead, retry);
       memset(buffer, 0, length);
       nRead = 0;
       retry = 0;
@@ -196,10 +196,10 @@ size_t MIIO::recvStr(char* buffer, size_t length)
   buffer[nRead] = '\0';
 
   if (nRead > 0) {
-    DEBUG_MIIO("[MIIO]recv string : %s\n", buffer);
+    DEBUG_MIIO("[MIIO]recv string : %s", buffer);
   }
   else {
-    DEBUG_MIIO("[MIIO]recv string : null\n");
+    DEBUG_MIIO("[MIIO]recv string : null");
   }
 
   return nRead;
