@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     branches:
-      - 'main'
+      - "main"
   pull_request:
 
 jobs:
@@ -22,4 +22,4 @@ jobs:
           arduino-cli core update-index
           arduino-cli core install esp32:esp32
       - name: Compile sketch
-        run: arduino-cli compile --library . --fqbn esp32:esp32:esp32 ./examples/Connect/Connect.ino
+        run: arduino-cli compile --library . --fqbn esp32:esp32:esp32 ./examples/Basic/Basic.ino
