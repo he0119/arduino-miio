@@ -33,12 +33,7 @@ arduino-cli core install esp32:esp32
 {
   "port": "COM5",
   "board": "esp32:esp32:esp32",
-  "buildPreferences": [
-    [
-      "build.defines",
-      "-DDEBUG_ESP_PORT=Serial"
-    ]
-  ],
+  "buildPreferences": [["build.defines", "-DDEBUG_ESP_PORT=Serial"]],
   "output": ".vscode/build",
   "sketch": "examples/Connect/Connect.ino"
 }
