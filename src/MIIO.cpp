@@ -42,6 +42,7 @@ void MIIO::loop()
 
   // FIXME: 目前会卡住 loop，直到超时
   // 需要改成非阻塞的方式
+
   size_t nRecv = recvStr(_pbuf, CMD_STR_MAX_LEN);
 
   if (nRecv <= 0) {
@@ -65,21 +66,20 @@ void MIIO::loop()
   }
 
   if (methodLen > 0 && _method != NULL) { /* start to find if method contained */
-    // miio_cmd_t* cmd = miio_command_find_by_method(miio, method);
-    // if (NULL == cmd) {
-    //   if (strcmp(ERROR_STRING, method) && strcmp(OK_STRING, method))
-    //     send_error(miio, ERROR_MESSAGE_UNCMD, ERROR_CODE_UNCMD);
-    // }
-    // else {
-    //   LOG_INFO_TAG(TAG, "found method : %s", method);
-    //   uart_command_config_arg(&arg, pbuf, recv_bytes); /* assembly arg to passed into callback func */
-    //   cmd->cb(handle, &arg, _miio_cmd_ack);	/* execute callback func contained in method finded */
-    // }
-    DEBUG_MIIO("[MIIO]found method : %s\n", _method);
+    auto cmd = miio_command_find_by_method(_method);
+    if (NULL == cmd.method || NULL == cmd.callback) {
+      if (strcmp(ERROR_STRING, _method) && strcmp(OK_STRING, _method)) {
+        DEBUG_MIIO("[MIIO]undefined command: %s\n", _method);
+      }
+    }
+    else {
+      DEBUG_MIIO("[MIIO]found method: %s\n", _method);
+      cmd.callback(_pbuf, nRecv);
+    }
   }
   else {
     ret = MIIO_ERROR_PARAM;
-    DEBUG_MIIO("[MIIO]unknown command : %s\n", (char*)_pbuf);
+    DEBUG_MIIO("[MIIO]unknown command: %s\n", (char*)_pbuf);
   }
 }
 
@@ -225,4 +225,38 @@ error_exit:
 
     return MIIO_ERROR_PARAM;
   }
+}
+
+int MIIO::onCommand(const char* method, MethodCallback callback)
+{
+  if (method == NULL || callback == NULL) {
+    return MIIO_ERROR_PARAM;
+  }
+
+  MIIOCommand cmd;
+  cmd.method = method;
+  cmd.callback = callback;
+
+  _commands->push_back(cmd);
+
+  return MIIO_OK;
+}
+
+MIIOCommand MIIO::miio_command_find_by_method(const char* method)
+{
+  MIIOCommand cmd;
+  cmd.method = NULL;
+  cmd.callback = NULL;
+
+  if (method == NULL) {
+    return cmd;
+  }
+
+  for (auto it = _commands->begin(); it != _commands->end(); ++it) {
+    if (strcmp(it->method, method) == 0) {
+      return *it;
+    }
+  }
+
+  return cmd;
 }

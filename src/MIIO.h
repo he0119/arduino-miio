@@ -2,6 +2,7 @@
 #define _MIIO_H_
 
 #include "Arduino.h"
+#include <vector>
 
 /* ==================== debug define ==================== */
 #ifndef NODEBUG_MIIO
@@ -68,6 +69,15 @@ typedef enum _uart_error_t {
 #define ACK_BUF_SIZE                CMD_STR_MAX_LEN
 #define DATA_STRING_MAX_LENGTH      (800)
 
+/* ==================== function define ==================== */
+typedef std::function<int(char* cmd, size_t length)> MethodCallback;
+struct MIIOCommand
+{
+  const char* method;
+  MethodCallback callback;
+};
+
+
 class MIIO
 {
 public:
@@ -94,6 +104,10 @@ public:
 
   void setReceiveRetry(unsigned int retry);
 
+  int onCommand(const char* method, MethodCallback callback);
+
+  MIIOCommand miio_command_find_by_method(const char* method);
+
   size_t sendStr(const char* str);
 
   size_t sendStr(String str);
@@ -114,6 +128,7 @@ private:
 
   char _pbuf[CMD_STR_MAX_LEN] = { 0 };
   char _method[CMD_METHOD_LEN_MAX] = { 0 };
+  std::vector<MIIOCommand> _commands[10];
 };
 
 #endif
