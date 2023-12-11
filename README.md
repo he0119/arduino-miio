@@ -27,6 +27,23 @@ arduino-cli core install esp32:esp32
 
 ### VSCode
 
+`.vscode/arduino.json` 的内容：
+
+```json
+{
+  "port": "COM5",
+  "board": "esp32:esp32:esp32",
+  "buildPreferences": [
+    [
+      "build.defines",
+      "-DDEBUG_ESP_PORT=Serial"
+    ]
+  ],
+  "output": ".vscode/build",
+  "sketch": "examples/Connect/Connect.ino"
+}
+```
+
 使用 VSCode 配合 Arduino 插件开发时，没有找到设置当前工作目录为 library 的方法。
 
 只能通过符号链接将项目所在文件夹放置 `arduino-cli.yaml` 配置文件中的 `directories.user` 中。（实现类似 pip install -e 的效果）
