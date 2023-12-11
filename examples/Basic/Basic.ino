@@ -1,6 +1,9 @@
 #include <MIIO.h>
 MIIO miio(Serial);
 
+int status_update_flag;
+bool on_status;
+
 void setup() {
   Serial.begin(115200);
 
@@ -32,6 +35,10 @@ void P_2_3_Fault_doSet(property_operation_t *o) {
 
   // 如果成功，返回代码: OPERATION_OK
   o->code = OPERATION_OK;
+
+  // 上报状态
+  on_status = o->value->data.boolean.value;
+  status_update_flag = 0x01;
 }
 
 void A_2_1_Toggle_doInvoke(action_operation_t *o) {
@@ -51,6 +58,19 @@ void A_2_1_Toggle_doInvoke(action_operation_t *o) {
   o->code = OPERATION_OK;
 }
 
+void P_2_1_On_doChange(bool newValue) {
+  if (miio.sendPropertyChanged(2, 1, property_value_new_boolean(newValue)) !=
+      MIIO_OK) {
+    Serial.println("send_property_changed failed!");
+  }
+}
+
 void loop() {
+  // 状态改变主动上报
+  if ((status_update_flag & 0x0F) == 0x01) {
+    P_2_1_On_doChange(on_status);
+    status_update_flag = status_update_flag & 0xF0;
+  }
+
   miio.loop();
 }

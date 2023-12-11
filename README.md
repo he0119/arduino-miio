@@ -4,7 +4,7 @@
 
 ## 使用
 
-请参考 [示例](examples/Connect/Connect.ino)。
+请参考 [示例](examples/Basic/Basic.ino)。
 
 ## 开发
 
