@@ -22,8 +22,6 @@
 
 SerialMIIO::SerialMIIO(Stream &serial) {
   _serial = &serial;
-  // 默认串口超时时间 200ms
-  _serial->setTimeout(USER_UART_TIMEOUT_MS);
 
   // 注册默认的回调函数
   // 用于处理 get_properties/set_properties/action
@@ -143,7 +141,7 @@ void SerialMIIO::loop() {
 }
 
 void SerialMIIO::setSerialTimeout(unsigned long timeout) {
-  _serial->setTimeout(timeout);
+  _serialTimeout = timeout;
 }
 
 void SerialMIIO::setPollInterval(unsigned long interval) {
@@ -214,7 +212,7 @@ size_t SerialMIIO::sendStrWaitAck(String str) {
 }
 
 size_t SerialMIIO::recvStr(char *buffer, size_t length) {
-  int nRead = _serial->readBytes(buffer, length);
+  int nRead = _readBytes(buffer, length);
 
   int retry = 0;
   while (buffer[nRead > 0 ? (nRead - 1) : 0] != END_CHAR &&
@@ -226,7 +224,7 @@ size_t SerialMIIO::recvStr(char *buffer, size_t length) {
       nRead = 0;
       retry = 0;
     }
-    nRead = nRead + _serial->readBytes(buffer + nRead, length - nRead);
+    nRead = nRead + _readBytes(buffer + nRead, length - nRead);
     retry++;
   }
 
@@ -722,4 +720,31 @@ int SerialMIIO::_defaultinvokeActionCallback(char *cmd, size_t length) {
   } while (false);
 
   return MIIO_OK;
+}
+
+size_t SerialMIIO::_readBytes(char *buffer, size_t length) {
+  size_t count = 0;
+  while (count < length) {
+    int c = _timedRead();
+    if (c < 0) {
+      break;
+    }
+    *buffer++ = (char)c;
+    count++;
+  }
+  return count;
+}
+
+int SerialMIIO::_timedRead() {
+  int c;
+  _serialStartMillis = millis();
+  do {
+    c = _serial->read();
+    if (c >= 0) {
+      return c;
+    }
+    // 如果没有读取到数据，则交出控制权
+    vTaskDelay(1);
+  } while (millis() - _serialStartMillis < _serialTimeout);
+  return -1; // -1 indicates timeout
 }

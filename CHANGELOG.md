@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/lang/zh-CN/
 
 ## [Unreleased]
 
+### Added
+
+- 支持 FreeRTOS 的多任务调度
+
 ## 0.0.3 - 2023-12-12
 
 ### Changed
