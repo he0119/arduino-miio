@@ -1,5 +1,5 @@
-#ifndef _MIIO_H_
-#define _MIIO_H_
+#ifndef _SerialMIIO_H_
+#define _SerialMIIO_H_
 
 #include <map>
 
@@ -158,6 +158,12 @@ private:
 
   unsigned long _lastPoll = 0;
   unsigned long _pollIntervalMs = USER_POLL_INTERVAL_MS;
+
+  unsigned long _serialStartMillis = 0;
+  unsigned long _serialTimeout = USER_UART_TIMEOUT_MS;
+  size_t _readBytes(char *buffer, size_t length);
+  int _timedRead();
+
   unsigned int _receiveRetry = USER_RECEIVE_RETRY;
 
   char _pbuf[CMD_STR_MAX_LEN] = {0};
