@@ -41,7 +41,7 @@ extern "C" {
 #endif
 
 /* ==================== callback function define ==================== */
-typedef std::function<int(char *cmd, size_t length)> MethodCallback;
+typedef std::function<void(char *cmd, size_t length)> MethodCallback;
 typedef std::function<void(property_operation_t *o)> PropertyCallback;
 typedef std::function<void(action_operation_t *o)> ActionInvokeCallback;
 
@@ -180,9 +180,10 @@ private:
   void _onPropertyGet(property_operation_t *o);
   void _onPropertySet(property_operation_t *o);
   void _onActionInvoke(action_operation_t *o);
-  int _defaultGetPropertiesCallback(char *cmd, size_t length);
-  int _defaultSetPropertyCallback(char *cmd, size_t length);
-  int _defaultinvokeActionCallback(char *cmd, size_t length);
+  void _defaultGetPropertiesCallback(char *cmd, size_t length);
+  void _defaultSetPropertyCallback(char *cmd, size_t length);
+  void _defaultinvokeActionCallback(char *cmd, size_t length);
+  void _defaultinvokeNoneCallback(char *cmd, size_t length);
 };
 
 #endif

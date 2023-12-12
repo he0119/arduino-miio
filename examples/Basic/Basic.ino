@@ -7,9 +7,10 @@ bool on_status;
 void setup() {
   Serial.begin(115200);
 
-  miio.setPollInterval(5000);
-  miio.setSerialTimeout(2000);
-  miio.setReceiveRetry(1);
+  // 可通过以下函数设置模组的一些参数
+  // miio.setPollInterval(5000);
+  // miio.setSerialTimeout(2000);
+  // miio.setReceiveRetry(1);
 
   miio.begin("perdev.switch.004", "18031", "0001");
 
