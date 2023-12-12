@@ -1,4 +1,4 @@
-#include <MIIO.h>
+#include <SerialMIIO.h>
 MIIO miio(Serial);
 
 int status_update_flag;
