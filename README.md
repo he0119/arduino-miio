@@ -27,7 +27,7 @@ arduino-cli core install esp32:esp32
 
 根据设备情况指定端口。
 
-`arduino-cli upload --library . --fqbn esp32:esp32:esp32 -p COM4 ./examples/Connect/Connect.ino`
+`arduino-cli upload --fqbn esp32:esp32:esp32 -p COM4 ./examples/Connect/Connect.ino`
 
 ### VSCode
 
@@ -49,7 +49,7 @@ arduino-cli core install esp32:esp32
 
 ```pwsh
 cd <directories.user>
-New-Item -ItemType SymbolicLink -Path "MIIO" -Target <arduino-miio 项目文件夹>
+New-Item -ItemType SymbolicLink -Path "SerialMIIO" -Target <arduino-miio 项目文件夹>
 ```
 
 这样才能正确编译示例项目并生成 `c_cpp_properties.json`。
