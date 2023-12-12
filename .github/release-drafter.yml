@@ -1,6 +1,6 @@
 template: $CHANGES
-name-template: "v$RESOLVED_VERSION"
-tag-template: "v$RESOLVED_VERSION"
+name-template: "$RESOLVED_VERSION"
+tag-template: "$RESOLVED_VERSION"
 exclude-labels:
   - "dependencies"
   - "skip-changelog"
