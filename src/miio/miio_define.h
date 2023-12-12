@@ -58,6 +58,7 @@ enum uart_error_t {
 #define ACTION_STRING "action"
 #define NET_CHANGE_STRING "MIIO_net_change"
 #define NONE_STRING "none"
+#define MCU_VERSION_REQ_STRING "MIIO_mcu_version_req"
 
 /* ==================== buffer size ==================== */
 /* buffer used to receive command string from wifi module */

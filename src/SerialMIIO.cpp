@@ -24,7 +24,7 @@ SerialMIIO::SerialMIIO(Stream &serial) {
   _serial = &serial;
 
   // 注册默认的回调函数
-  // 用于处理 get_properties/set_properties/action
+  // 用于处理 get_properties/set_properties/action/none/mcu_version_req
   // 可以被用户覆盖
   onMethod(
       GET_PRO_STRING,
@@ -54,11 +54,21 @@ SerialMIIO::SerialMIIO(Stream &serial) {
           this,
           std::placeholders::_1,
           std::placeholders::_2));
+
+  onMethod(
+      MCU_VERSION_REQ_STRING,
+      std::bind(
+          &SerialMIIO::_defaultMCUVersionCallback,
+          this,
+          std::placeholders::_1,
+          std::placeholders::_2));
 }
 
 void SerialMIIO::begin(
     const char *model, const char *blePid, const char *mcuVersion) {
   {
+    _mcuVersion = mcuVersion;
+
     int result = 0;
     do {
       result = MIIO_OK;
@@ -705,6 +715,16 @@ void SerialMIIO::_defaultinvokeActionCallback(char *cmd, size_t length) {
 void SerialMIIO::_defaultinvokeNoneCallback(char *cmd, size_t length) {
   DEBUG_MIIO(
       "[SerialMIIO]========================= none ==========================");
+}
+
+void SerialMIIO::_defaultMCUVersionCallback(char *cmd, size_t length) {
+  DEBUG_MIIO(
+      "[SerialMIIO]==================== mcu_version_req ====================");
+
+  char result[RESULT_BUF_SIZE] = {0};
+  str_n_cat(result, 2, "mcu_version ", _mcuVersion);
+  action_operation_encode_tail(result, sizeof(result));
+  sendResponse(result);
 }
 
 size_t SerialMIIO::_readBytes(char *buffer, size_t length) {
