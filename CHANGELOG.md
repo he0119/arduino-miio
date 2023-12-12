@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/lang/zh-CN/
 
 ## [Unreleased]
 
+## 0.0.2 - 2023-12-12
+
+### Changed
+
+- 修改项目名称
+
 ## 0.0.1 - 2023-12-12
 
 ### Added
