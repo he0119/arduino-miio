@@ -155,6 +155,7 @@ public:
 
 private:
   Stream *_serial;
+  const char *_mcuVersion = "0001";
 
   unsigned long _lastPoll = 0;
   unsigned long _pollIntervalMs = USER_POLL_INTERVAL_MS;
@@ -184,6 +185,7 @@ private:
   void _defaultSetPropertyCallback(char *cmd, size_t length);
   void _defaultinvokeActionCallback(char *cmd, size_t length);
   void _defaultinvokeNoneCallback(char *cmd, size_t length);
+  void _defaultMCUVersionCallback(char *cmd, size_t length);
 };
 
 #endif
