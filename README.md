@@ -1,6 +1,6 @@
 # Arduino Serial MIIO
 
-通过串口与小米模组通讯。
+使用 [小米 IoT 串口通讯协议](https://iot.mi.com/v2/new/doc/embedded-dev/module-dev/function-dev/serial-communication) 与小米 IoT 模组通讯。
 
 ## 使用
 
