@@ -71,14 +71,18 @@ enum uart_error_t {
 #define ACK_BUF_SIZE CMD_STR_MAX_LEN
 #define DATA_STRING_MAX_LENGTH (800)
 
+#define RESULT_MAX_LEN (512)
+
 /* ==================== operation define ==================== */
 #define ID_MAX_LEN 4
 #define VALUE_MAX_LEN 16
 
 #define ERROR_MESSAGE_UNCMD "undefined command"
 #define ERROR_MESSAGE_UNPARAMS "error command params"
+#define ERROR_MESSAGE_RESULT_TOO_LONG "result too long"
 #define ERROR_CODE_UNCMD -9999
 #define ERROR_CODE_UNPARAMS -9998
+#define ERROR_CODE_RESULT_TOO_LONG -9997
 
 #define USER_POLL_INTERVAL_MS (200)
 #define USER_UART_TIMEOUT_MS (200)
