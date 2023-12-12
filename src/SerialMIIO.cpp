@@ -47,6 +47,13 @@ SerialMIIO::SerialMIIO(Stream &serial) {
           this,
           std::placeholders::_1,
           std::placeholders::_2));
+  onMethod(
+      NONE_STRING,
+      std::bind(
+          &SerialMIIO::_defaultinvokeNoneCallback,
+          this,
+          std::placeholders::_1,
+          std::placeholders::_2));
 }
 
 void SerialMIIO::begin(
@@ -128,6 +135,7 @@ void SerialMIIO::loop() {
     auto callback = callbackFindByMethod(_method);
     if (NULL == callback) {
       if (strcmp(ERROR_STRING, _method) && strcmp(OK_STRING, _method)) {
+        sendErrorCode(ERROR_MESSAGE_UNCMD, ERROR_CODE_UNCMD);
         DEBUG_MIIO("[SerialMIIO]undefined command: %s", _method);
       }
     } else {
@@ -674,52 +682,29 @@ void SerialMIIO::_onPropertySet(property_operation_t *o) {
   callback(o);
 }
 
-int SerialMIIO::_defaultGetPropertiesCallback(char *cmd, size_t length) {
-  Serial.println("==================== get_properties ====================");
+void SerialMIIO::_defaultGetPropertiesCallback(char *cmd, size_t length) {
+  DEBUG_MIIO(
+      "[SerialMIIO]==================== get_properties ====================");
 
-  do {
-    int ret = 0;
-
-    ret = executePropertyOperation(cmd, length, PROPERTY_OPERATION_GET);
-    if (ret != 0) {
-      /* add error solution here */
-      break;
-    }
-  } while (false);
-
-  return MIIO_OK;
+  executePropertyOperation(cmd, length, PROPERTY_OPERATION_GET);
+  ;
 }
 
-int SerialMIIO::_defaultSetPropertyCallback(char *cmd, size_t length) {
-  Serial.println("==================== set_properties ====================");
+void SerialMIIO::_defaultSetPropertyCallback(char *cmd, size_t length) {
+  DEBUG_MIIO(
+      "[SerialMIIO]==================== set_properties ====================");
 
-  do {
-    int ret = 0;
-
-    ret = executePropertyOperation(cmd, length, PROPERTY_OPERATION_SET);
-    if (ret != 0) {
-      /* add error solution here */
-      break;
-    }
-  } while (false);
-
-  return MIIO_OK;
+  executePropertyOperation(cmd, length, PROPERTY_OPERATION_SET);
 }
 
-int SerialMIIO::_defaultinvokeActionCallback(char *cmd, size_t length) {
-  Serial.println("==================== action ====================");
+void SerialMIIO::_defaultinvokeActionCallback(char *cmd, size_t length) {
+  DEBUG_MIIO("[SerialMIIO]==================== action ====================");
+  executeActionInvocation(cmd, length);
+}
 
-  do {
-    int ret = 0;
-
-    ret = executeActionInvocation(cmd, length);
-    if (ret != 0) {
-      /* add error solution here */
-      break;
-    }
-  } while (false);
-
-  return MIIO_OK;
+void SerialMIIO::_defaultinvokeNoneCallback(char *cmd, size_t length) {
+  DEBUG_MIIO(
+      "[SerialMIIO]========================= none ==========================");
 }
 
 size_t SerialMIIO::_readBytes(char *buffer, size_t length) {
