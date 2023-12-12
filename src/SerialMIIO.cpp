@@ -637,7 +637,7 @@ int SerialMIIO::sendErrorCode(const char *pbuf, int errcode) {
   int ret = 0;
   do {
     char result[RESULT_BUF_SIZE] = {0};
-    str_n_cat(result, 2, "error ", pbuf);
+    str_n_cat(result, 2, "error ", send_msg);
     action_operation_encode_tail(result, sizeof(result));
     sendResponse(result);
   } while (false);
