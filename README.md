@@ -1,4 +1,4 @@
-# arduino-miio
+# Arduino MIIO
 
 通过串口与小米模组通讯。
 
