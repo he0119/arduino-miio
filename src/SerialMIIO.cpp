@@ -514,6 +514,10 @@ int SerialMIIO::executePropertyOperation(
     str_n_cat(result, 1, "result ");
 
     for (uint32_t i = 0; i < params_pairs; ++i) {
+      if (RESULT_MAX_LEN < strlen(result)) {
+        ret = MIIO_ERROR_SIZE;
+        break;
+      }
       /* decode command params */
       property_operation_t *opt =
           miio_property_operation_decode(pbuf, buf_sz, i, has_value);
@@ -530,6 +534,12 @@ int SerialMIIO::executePropertyOperation(
 
       property_operation_encode_param(result, RESULT_BUF_SIZE, opt, has_value);
       miio_property_operation_delete(opt);
+    }
+
+    if (MIIO_ERROR_SIZE == ret) {
+      DEBUG_MIIO("[SerialMIIO]result too long");
+      sendErrorCode(ERROR_MESSAGE_RESULT_TOO_LONG, ERROR_CODE_RESULT_TOO_LONG);
+      break;
     }
 
     property_operation_encode_tail(result, RESULT_BUF_SIZE);
@@ -597,7 +607,6 @@ int SerialMIIO::executeActionInvocation(const char *pbuf, int buf_sz) {
     }
 
     action_operation_encode_tail(result, sizeof(result));
-
     sendResponse(result);
   } while (false);
 
