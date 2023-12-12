@@ -1,5 +1,5 @@
 #include <SerialMIIO.h>
-MIIO miio(Serial);
+SerialMIIO miio(Serial);
 
 int status_update_flag;
 bool on_status;

@@ -45,9 +45,9 @@ typedef std::function<int(char *cmd, size_t length)> MethodCallback;
 typedef std::function<void(property_operation_t *o)> PropertyCallback;
 typedef std::function<void(action_operation_t *o)> ActionInvokeCallback;
 
-class MIIO {
+class SerialMIIO {
 public:
-  MIIO(Stream &serial);
+  SerialMIIO(Stream &serial);
 
   /**
    * @brief 小米模组基本设置
