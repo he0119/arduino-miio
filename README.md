@@ -21,13 +21,13 @@ arduino-cli core install esp32:esp32
 
 ### 编译
 
-`arduino-cli compile --library . --fqbn esp32:esp32:esp32 ./examples/Connect/Connect.ino`
+`arduino-cli compile --library . --fqbn esp32:esp32:esp32 ./examples/Basic/Basic.ino`
 
 ### 上传
 
 根据设备情况指定端口。
 
-`arduino-cli upload --fqbn esp32:esp32:esp32 -p COM4 ./examples/Connect/Connect.ino`
+`arduino-cli upload --fqbn esp32:esp32:esp32 -p COM4 ./examples/Basic/Basic.ino`
 
 ### VSCode
 
@@ -39,7 +39,7 @@ arduino-cli core install esp32:esp32
   "board": "esp32:esp32:esp32",
   "buildPreferences": [["build.defines", "-DDEBUG_ESP_PORT=Serial"]],
   "output": ".vscode/build",
-  "sketch": "examples/Connect/Connect.ino"
+  "sketch": "examples/Basic/Basic.ino"
 }
 ```
 
