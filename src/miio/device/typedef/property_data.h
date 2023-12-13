@@ -26,7 +26,7 @@ typedef struct _data_boolean {
 } data_boolean_t;
 
 typedef struct _data_string {
-  char value[DATA_STRING_MAX_LENGTH + 1];
+  char value[CMD_BUF_SIZE + 1];
   uint32_t length;
 } data_string_t;
 

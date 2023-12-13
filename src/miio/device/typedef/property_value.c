@@ -30,7 +30,7 @@ property_value_t *property_value_new_string(const char *value) {
   property_value_t *thiz = property_value_new();
   if (thiz != NULL) {
     thiz->format = PROPERTY_FORMAT_STRING;
-    strncpy(thiz->data.string.value, value, DATA_STRING_MAX_LENGTH);
+    strncpy(thiz->data.string.value, value, CMD_BUF_SIZE);
     thiz->data.string.length = strlen(thiz->data.string.value);
   }
 
