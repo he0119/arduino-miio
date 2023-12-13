@@ -33,7 +33,7 @@ typedef int (*miio_fp_cmd_handle_t)(
 typedef struct _miio_cmd {
   list_head_t list;
   arch_os_mutex mutex;
-  char method[CMD_METHOD_LEN_MAX];
+  char method[CMD_METHOD_MAX_LEN];
   char loop_flag;
   miio_fp_cmd_handle_t cb;
 } miio_cmd_t;

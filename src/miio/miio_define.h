@@ -60,22 +60,25 @@ enum uart_error_t {
 #define NONE_STRING "none"
 #define MCU_VERSION_REQ_STRING "MIIO_mcu_version_req"
 
+/* ==================== max define ==================== */
+// model 字符串由公司名、产品类别名和产品版本构成，总长度不能超过 23 个字符。
+#define MODEL_NAME_MAX_LEN (23)
+// 双模模组的蓝牙 PID（使用十进制；蓝牙配网使用，PID 小于 65536）
+#define BLE_PID_MAX_VALUE (65536)
+// MCU 固件版本必须是 4 位数字
+#define MCU_VERSION_LEN (4)
+// result/properties_changed/event_occured
+// 整个指令最多 512 字节。
+#define CMD_MAX_LEN (512)
+// 指令后面最多使用 64个参数
+#define CMD_PARAM_MAX_LEN (64)
+/* 指令名称的最大长度 */
+#define CMD_METHOD_MAX_LEN (64)
+
 /* ==================== buffer size ==================== */
-/* buffer used to receive command string from wifi module */
-#define CMD_STR_MAX_LEN (800) // max 800 byte
-/* max method name register with miio_cmd_method_register() function */
-#define CMD_METHOD_LEN_MAX (64)
-/* buffer used to response command execute result */
-#define RESULT_BUF_SIZE CMD_STR_MAX_LEN
-
-#define ACK_BUF_SIZE CMD_STR_MAX_LEN
-#define DATA_STRING_MAX_LENGTH (800)
-
-#define RESULT_MAX_LEN (512)
-
-/* ==================== operation define ==================== */
-#define ID_MAX_LEN 4
-#define VALUE_MAX_LEN 16
+// 指令标准是不超过 512 字节，为了防止溢出，这里设置为 800 字节
+#define CMD_BUF_SIZE (800)
+#define ACK_BUF_SIZE CMD_BUF_SIZE
 
 #define ERROR_MESSAGE_UNCMD "undefined command"
 #define ERROR_MESSAGE_UNPARAMS "error command params"

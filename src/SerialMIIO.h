@@ -54,9 +54,9 @@ public:
    *
    * 完成小米模组的基本设置，每次上电后都需要调用此函数。
    *
-   * @param model 产品型号，如 xiaomi.prod.v2
-   * @param blePid 模组 PID
-   * @param mcuVersion MCU 固件版本
+   * @param model 产品型号，如 xiaomi.prod.v2（不能超过 23 个字符）
+   * @param blePid 模组 PID（小于 65536）
+   * @param mcuVersion MCU 固件版本（必须是 4 位数字）
    */
   void begin(const char *model, const char *blePid, const char *mcuVersion);
 
@@ -104,6 +104,8 @@ public:
 
   PropertyCallback callbackFindByPropertySet(uint32_t siid, uint32_t piid);
 
+  size_t recvStr(char *buffer, size_t length);
+
   size_t sendStr(const char *str);
 
   size_t sendStr(String str);
@@ -112,46 +114,24 @@ public:
 
   size_t sendStrWaitAck(String str);
 
-  size_t recvStr(char *buffer, size_t length);
+  int sendErrorCode(const char *msg, int errcode);
+
+  /**
+   * @brief 发送回复
+   * @param response 回复内容
+   * @return 发送状态，0 为成功，其他为失败
+   */
+  int sendResponse(const char *response);
 
   int sendPropertyChanged(
       uint32_t siid, uint32_t piid, property_value_t *newValue);
 
-  int executePropertyChanged(property_operation_t *opt);
-
   int sendEventOccurred(event_operation_t *event);
 
-  int eventSend(char out[], size_t len);
-
-  /**
-   * ------------------------------------------------
-   * request : down get_properties 1 1 2 1
-   * ------------------------------------------------
-   * response : result 1 1 0 "hello" 2 1 0 true
-   * ------------------------------------------------
-   *
-   *
-   * ------------------------------------------------
-   * request : down set_properties 1 1 "hello" 2 1 true
-   * ------------------------------------------------
-   * response : result 1 1 0 2 1 0
-   * ------------------------------------------------
-   */
   int executePropertyOperation(
-      const char *pbuf, int buf_sz, property_operation_type type);
+      const char *cmd, size_t length, property_operation_type type);
 
-  /**
-   * ------------------------------------------------
-   * request : down action 4 1 1 false
-   * ------------------------------------------------
-   * response : result 4 1 0 1 false
-   * ------------------------------------------------
-   */
-  int executeActionInvocation(const char *pbuf, int buf_sz);
-
-  int sendResponse(const char *pbuf);
-
-  int sendErrorCode(const char *pbuf, int errcode);
+  int executeActionInvocation(const char *cmd, size_t length);
 
 private:
   Stream *_serial;
@@ -167,8 +147,8 @@ private:
 
   unsigned int _receiveRetry = USER_RECEIVE_RETRY;
 
-  char _pbuf[CMD_STR_MAX_LEN] = {0};
-  char _method[CMD_METHOD_LEN_MAX] = {0};
+  char _cmd[CMD_BUF_SIZE] = {0};
+  char _method[CMD_METHOD_MAX_LEN] = {0};
 
   std::map<String, MethodCallback> _methodCallbacks;
   std::map<std::pair<uint32_t, uint32_t>, PropertyCallback>
