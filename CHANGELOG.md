@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/lang/zh-CN/
 ### Fix
 
 - 修复 MCU 串口协议测试工具发现的错误
+- 修复下行命令参数不正确时的报错
 
 ## 0.0.4 - 2023-12-12
 
