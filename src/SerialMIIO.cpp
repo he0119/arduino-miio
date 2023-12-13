@@ -286,7 +286,7 @@ int SerialMIIO::sendErrorCode(const char *msg, int errcode) {
 int SerialMIIO::sendPropertyChanged(
     uint32_t siid, uint32_t piid, property_value_t *newValue) {
   DEBUG_MIIO("[SerialMIIO]property changed");
-  int ret = 0;
+  int ret = MIIO_OK;
 
   if (NULL == newValue) {
     ret = MIIO_ERROR_PARAM;
@@ -346,7 +346,7 @@ int SerialMIIO::sendEventOccurred(event_operation_t *event) {
 
 int SerialMIIO::executePropertyOperation(
     const char *cmd, size_t length, property_operation_type type) {
-  int ret = 0;
+  int ret = MIIO_OK;
 
   char *cmdBuf = (char *)calloc(1, length);
   if (NULL == cmdBuf) {
@@ -373,11 +373,10 @@ int SerialMIIO::executePropertyOperation(
   }
 
   switch (type) {
-
   case PROPERTY_OPERATION_GET: {
     if (paramsPairs % 2 != 0) {
       DEBUG_MIIO("[SerialMIIO]params error");
-      ret = -1;
+      ret = MIIO_ERROR_PARAM;
     } else {
       paramsPairs /= 2;
     }
@@ -386,7 +385,7 @@ int SerialMIIO::executePropertyOperation(
   case PROPERTY_OPERATION_SET: {
     if (paramsPairs % 3 != 0) {
       DEBUG_MIIO("[SerialMIIO]params error");
-      ret = -1;
+      ret = MIIO_ERROR_PARAM;
     } else {
       paramsPairs /= 3;
     }
@@ -394,6 +393,11 @@ int SerialMIIO::executePropertyOperation(
   }
 
   do {
+    if (MIIO_ERROR_PARAM == ret) {
+      sendErrorCode(ERROR_MESSAGE_UNPARAMS, ERROR_CODE_UNPARAMS);
+      break;
+    }
+
     bool hasValue = (type == PROPERTY_OPERATION_SET);
 
     char result[CMD_BUF_SIZE] = {0};
@@ -440,7 +444,7 @@ int SerialMIIO::executePropertyOperation(
 }
 
 int SerialMIIO::executeActionInvocation(const char *cmd, size_t length) {
-  int ret = 0;
+  int ret = MIIO_OK;
 
   char *cmdBuf = (char *)calloc(1, length);
   if (NULL == cmdBuf) {
@@ -467,14 +471,17 @@ int SerialMIIO::executeActionInvocation(const char *cmd, size_t length) {
 
   if (paramsPairs >= 4 && paramsPairs % 2 != 0) {
     DEBUG_MIIO("[SerialMIIO]params error");
-    ret = -1;
-    sendErrorCode(ERROR_MESSAGE_UNPARAMS, ERROR_CODE_UNPARAMS);
-    return ret;
+    ret = MIIO_ERROR_PARAM;
   } else {
     paramsPairs = (paramsPairs + 3) / 4;
   }
 
   do {
+    if (MIIO_ERROR_PARAM == ret) {
+      sendErrorCode(ERROR_MESSAGE_UNPARAMS, ERROR_CODE_UNPARAMS);
+      break;
+    }
+
     char result[CMD_BUF_SIZE] = {0};
     str_n_cat(result, 1, "result ");
 
@@ -636,29 +643,29 @@ void SerialMIIO::_onPropertySet(property_operation_t *o) {
 }
 
 void SerialMIIO::_defaultGetPropertiesCallback(char *cmd, size_t length) {
-  DEBUG_MIIO("[SerialMIIO]down get_properties");
+  DEBUG_MIIO("[SerialMIIO]down get_properties default callback");
 
   executePropertyOperation(cmd, length, PROPERTY_OPERATION_GET);
 }
 
 void SerialMIIO::_defaultSetPropertyCallback(char *cmd, size_t length) {
-  DEBUG_MIIO("[SerialMIIO]down set_properties");
+  DEBUG_MIIO("[SerialMIIO]down set_properties default callback");
 
   executePropertyOperation(cmd, length, PROPERTY_OPERATION_SET);
 }
 
 void SerialMIIO::_defaultinvokeActionCallback(char *cmd, size_t length) {
-  DEBUG_MIIO("[SerialMIIO]down action");
+  DEBUG_MIIO("[SerialMIIO]down action default callback");
 
   executeActionInvocation(cmd, length);
 }
 
 void SerialMIIO::_defaultinvokeNoneCallback(char *cmd, size_t length) {
-  DEBUG_MIIO("[SerialMIIO]down none");
+  DEBUG_MIIO("[SerialMIIO]down none default callback");
 }
 
 void SerialMIIO::_defaultMCUVersionCallback(char *cmd, size_t length) {
-  DEBUG_MIIO("[SerialMIIO]down mcu_version_req");
+  DEBUG_MIIO("[SerialMIIO]down mcu_version_req default callback");
 
   char result[CMD_BUF_SIZE] = {0};
   str_n_cat(result, 2, "mcu_version ", _mcuVersion);
