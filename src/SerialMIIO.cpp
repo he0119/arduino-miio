@@ -286,7 +286,7 @@ int SerialMIIO::sendErrorCode(const char *msg, int errcode) {
 int SerialMIIO::sendPropertyChanged(
     uint32_t siid, uint32_t piid, property_value_t *newValue) {
   DEBUG_MIIO("[SerialMIIO]property changed");
-  int ret = 0;
+  int ret = MIIO_OK;
 
   if (NULL == newValue) {
     ret = MIIO_ERROR_PARAM;
@@ -444,7 +444,7 @@ int SerialMIIO::executePropertyOperation(
 }
 
 int SerialMIIO::executeActionInvocation(const char *cmd, size_t length) {
-  int ret = 0;
+  int ret = MIIO_OK;
 
   char *cmdBuf = (char *)calloc(1, length);
   if (NULL == cmdBuf) {
