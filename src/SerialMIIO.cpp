@@ -110,7 +110,7 @@ void SerialMIIO::loop() {
   _lastPoll = millis();
 
   /* clear command string buffer */
-  memset(_pbuf, 0, CMD_BUF_SIZE);
+  memset(_cmd, 0, CMD_BUF_SIZE);
   memset(_method, 0, CMD_METHOD_MAX_LEN);
 
   sendStr("get_down\r");
@@ -118,22 +118,22 @@ void SerialMIIO::loop() {
   // FIXME: 目前会卡住 loop，直到超时
   // 需要改成非阻塞的方式
 
-  size_t nRecv = recvStr(_pbuf, CMD_BUF_SIZE);
+  size_t nRecv = recvStr(_cmd, CMD_BUF_SIZE);
 
   if (nRecv <= 0) {
     DEBUG_MIIO("[SerialMIIO]uart connected error or module rebooting...");
     return;
   }
 
-  if (_pbuf[nRecv - 1] != END_CHAR) {
-    DEBUG_MIIO("[SerialMIIO]uart recv error[%s]", _pbuf);
+  if (_cmd[nRecv - 1] != END_CHAR) {
+    DEBUG_MIIO("[SerialMIIO]uart recv error[%s]", _cmd);
     return;
   }
 
   size_t methodLen = sizeof(_method);
-  int ret = uart_comamnd_decoder(_pbuf, nRecv, _method, &methodLen);
+  int ret = uart_comamnd_decoder(_cmd, nRecv, _method, &methodLen);
   if (MIIO_OK != ret) { /* judge if string decoded correctly */
-    DEBUG_MIIO("[SerialMIIO]get method failed[%s]", _pbuf);
+    DEBUG_MIIO("[SerialMIIO]get method failed[%s]", _cmd);
     return;
   }
 
@@ -147,10 +147,10 @@ void SerialMIIO::loop() {
       }
     } else {
       DEBUG_MIIO("[SerialMIIO]found method: %s", _method);
-      callback(_pbuf, nRecv);
+      callback(_cmd, nRecv);
     }
   } else {
-    DEBUG_MIIO("[SerialMIIO]unknown command: %s", (char *)_pbuf);
+    DEBUG_MIIO("[SerialMIIO]unknown command: %s", (char *)_cmd);
   }
 }
 
@@ -394,7 +394,7 @@ int SerialMIIO::executePropertyOperation(
   }
 
   do {
-    bool has_value = (type == PROPERTY_OPERATION_SET);
+    bool hasValue = (type == PROPERTY_OPERATION_SET);
 
     char result[CMD_BUF_SIZE] = {0};
     str_n_cat(result, 1, "result ");
@@ -406,19 +406,19 @@ int SerialMIIO::executePropertyOperation(
       }
       /* decode command params */
       property_operation_t *opt =
-          miio_property_operation_decode(cmd, length, i, has_value);
+          miio_property_operation_decode(cmd, length, i, hasValue);
 
       if (opt == NULL) {
         break;
       }
 
-      if (has_value) {
+      if (hasValue) {
         _onPropertySet(opt);
       } else {
         _onPropertyGet(opt);
       }
 
-      property_operation_encode_param(result, CMD_BUF_SIZE, opt, has_value);
+      property_operation_encode_param(result, CMD_BUF_SIZE, opt, hasValue);
       miio_property_operation_delete(opt);
     }
 

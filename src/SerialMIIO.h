@@ -147,7 +147,7 @@ private:
 
   unsigned int _receiveRetry = USER_RECEIVE_RETRY;
 
-  char _pbuf[CMD_BUF_SIZE] = {0};
+  char _cmd[CMD_BUF_SIZE] = {0};
   char _method[CMD_METHOD_MAX_LEN] = {0};
 
   std::map<String, MethodCallback> _methodCallbacks;
