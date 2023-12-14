@@ -192,7 +192,7 @@ private:
   void _defaultinvokeNoneCallback(const char *cmd, size_t length);
   void _defaultMCUVersionCallback(const char *cmd, size_t length);
 
-  void _handleXiaomiSetup(int result);
+  void _handleXiaomiSetup(bool result);
   void _handleGetDownSend(String &cmd);
   void _handleAck(String &cmd);
 };

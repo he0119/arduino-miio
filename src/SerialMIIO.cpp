@@ -75,6 +75,7 @@ void SerialMIIO::begin(String model, String blePid, String mcuVersion) {
   _model = model;
   _blePid = blePid;
   _mcuVersion = mcuVersion;
+
   _handleXiaomiSetup(0);
 }
 
@@ -570,7 +571,8 @@ void SerialMIIO::_defaultMCUVersionCallback(const char *cmd, size_t length) {
 
 void SerialMIIO::_read() {
   if (!_getDownSend &&
-      (millis() - _lastPoll > _pollIntervalMs || _lastPoll == 0)) {
+      (millis() - _lastPoll > _pollIntervalMs || _lastPoll == 0) &&
+      _xiaomiSetupResult == SETUP_INIT) {
     _lastPoll = millis();
 
     _cmd.clear();
@@ -586,9 +588,9 @@ void SerialMIIO::_read() {
   // 超时时增加重试次数
   if (_serial->available() <= 0 &&
       millis() - _serialStartMillis > _serialTimeout) {
-    DEBUG_MIIO("[SerialMIIO]read timeout");
+    // DEBUG_MIIO("[SerialMIIO]read timeout");
     _retry++;
-    _serialStartMillis = 0;
+    _serialStartMillis = millis();
     return;
   }
 
@@ -616,11 +618,14 @@ void SerialMIIO::_read() {
     _executeReceiveCallbacks(_cmd);
     _cmd.clear();
     _retry = 0;
+    _getDownSend = false;
     return;
   }
 }
 
 void SerialMIIO::_executeReceiveCallbacks(String &cmd) {
+  DEBUG_MIIO("[SerialMIIO]execute receive callbacks");
+
   if (_receiveCallbacks.size() <= 0) {
     return;
   }
@@ -629,9 +634,9 @@ void SerialMIIO::_executeReceiveCallbacks(String &cmd) {
   _receiveCallbacks.pop_back();
 }
 
-void SerialMIIO::_handleXiaomiSetup(int result) {
+void SerialMIIO::_handleXiaomiSetup(bool result) {
   DEBUG_MIIO(
-      "[SerialMIIO]handle xiaomi setup, %s, result %s",
+      "[SerialMIIO]handle xiaomi setup, %d, result %s",
       _setupStatus,
       result ? "success" : "failed");
 
@@ -699,8 +704,6 @@ void SerialMIIO::_handleXiaomiSetup(int result) {
       _xiaomiSetupResult = 0;
       DEBUG_MIIO("[SerialMIIO]xiaomi setup failed");
     }
-    break;
-  default:
     break;
   }
 }

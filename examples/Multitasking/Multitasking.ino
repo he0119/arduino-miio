@@ -10,7 +10,7 @@ void setup() {
 unsigned long last = 0;
 
 void loop() {
-  // miio.loop();
+  miio.loop();
 
   if (millis() - last > 1000) {
     Serial.println("Hello World!");
