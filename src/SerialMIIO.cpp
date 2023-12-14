@@ -595,7 +595,7 @@ void SerialMIIO::_read() {
   }
 
   while (_serial->available() > 0) {
-    _cmd += _serial->read();
+    _cmd += (char)_serial->read();
     _serialStartMillis = millis();
 
     if (_cmd.length() > CMD_BUF_SIZE) {
