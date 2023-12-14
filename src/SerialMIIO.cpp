@@ -572,7 +572,7 @@ void SerialMIIO::_defaultMCUVersionCallback(const char *cmd, size_t length) {
 void SerialMIIO::_read() {
   if (!_getDownSend &&
       (millis() - _lastPoll > _pollIntervalMs || _lastPoll == 0) &&
-      _xiaomiSetupResult == SETUP_INIT) {
+      _setupStatus == SETUP_OK) {
     _lastPoll = millis();
 
     _cmd.clear();
@@ -627,6 +627,7 @@ void SerialMIIO::_executeReceiveCallbacks(String &cmd) {
   DEBUG_MIIO("[SerialMIIO]execute receive callbacks");
 
   if (_receiveCallbacks.size() <= 0) {
+    DEBUG_MIIO("[SerialMIIO]no receive callback");
     return;
   }
 
@@ -645,17 +646,19 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
 
   switch (_setupStatus) {
   case SETUP_INIT:
+    _setupStatus = SETUP_ECHO;
     cmd += "echo off\r";
+
     sendStrWaitAck(
         cmd,
         std::bind(
             &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
-    _setupStatus = SETUP_ECHO;
     break;
   case SETUP_ECHO:
     if (result) {
       _xiaomiSetupResult |= SETUP_ECHO;
     }
+    _setupStatus = SETUP_MODEL;
 
     cmd += "model ";
     cmd += _model;
@@ -664,12 +667,13 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
         cmd,
         std::bind(
             &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
-    _setupStatus = SETUP_MODEL;
     break;
   case SETUP_MODEL:
     if (result) {
       _xiaomiSetupResult |= SETUP_MODEL;
     }
+    _setupStatus = SETUP_BLE_PID;
+
     cmd += "ble ";
     cmd += _blePid;
     cmd += "\r";
@@ -677,12 +681,13 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
         cmd,
         std::bind(
             &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
-    _setupStatus = SETUP_BLE_PID;
     break;
   case SETUP_BLE_PID:
     if (result) {
       _xiaomiSetupResult |= SETUP_BLE_PID;
     }
+    _setupStatus = SETUP_MCU_VERSION;
+
     cmd += "mcu_version ";
     cmd += _mcuVersion;
     cmd += "\r";
@@ -690,14 +695,14 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
         cmd,
         std::bind(
             &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
-    _setupStatus = SETUP_MCU_VERSION;
     break;
   case SETUP_MCU_VERSION:
     if (result) {
       _xiaomiSetupResult |= SETUP_MCU_VERSION;
     }
 
-    if (_xiaomiSetupResult == SETUP_INIT) {
+    if (_xiaomiSetupResult == SETUP_OK) {
+      _setupStatus = SETUP_OK;
       DEBUG_MIIO("[SerialMIIO]xiaomi setup success");
     } else {
       _setupStatus = SETUP_INIT;
@@ -747,5 +752,7 @@ void SerialMIIO::_handleAck(String &cmd) {
   if (NULL != _ackResultCallback) {
     _ackResultCallback(isOk);
     _ackResultCallback = NULL;
+  } else {
+    DEBUG_MIIO("[SerialMIIO]no ack result callback");
   }
 }

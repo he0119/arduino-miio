@@ -50,11 +50,12 @@ typedef std::function<void(int result)> AckResultCallback;
 
 /* ==================== user define ==================== */
 enum SetupStatus {
+  SETUP_INIT = 0,
   SETUP_ECHO = 1,
   SETUP_MODEL = 2,
   SETUP_BLE_PID = 4,
   SETUP_MCU_VERSION = 8,
-  SETUP_INIT = 15,
+  SETUP_OK = 15,
 };
 
 class SerialMIIO {

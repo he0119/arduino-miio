@@ -12,8 +12,8 @@ unsigned long last = 0;
 void loop() {
   miio.loop();
 
-  if (millis() - last > 1000) {
-    Serial.println("Hello World!");
-    last = millis();
-  }
+  // if (millis() - last > 1000) {
+  //   Serial.println("Hello World!");
+  //   last = millis();
+  // }
 }
