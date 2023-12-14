@@ -23,6 +23,8 @@
 SerialMIIO::SerialMIIO(Stream &serial) {
   _serial = &serial;
 
+  _cmd.reserve(CMD_BUF_SIZE);
+
   // 注册默认的回调函数
   // 用于处理 get_properties/set_properties/action/none/mcu_version_req
   // 可以被用户覆盖
@@ -66,92 +68,18 @@ SerialMIIO::SerialMIIO(Stream &serial) {
 
 void SerialMIIO::begin(
     const char *model, const char *blePid, const char *mcuVersion) {
-  {
-    _mcuVersion = mcuVersion;
-
-    int result = 0;
-    do {
-      result = MIIO_OK;
-      // https://iot.mi.com/v2/new/doc/resources-and-services/personal-developer/embedded-dev#MCU%20程序开发
-      result |=
-          ((UART_RECV_ACK_ERROR == sendStrWaitAck("echo off\r")) ? MIIO_ERROR
-                                                                 : MIIO_OK);
-      result |=
-          ((UART_RECV_ACK_ERROR ==
-            sendStrWaitAck(String("model ") + String(model) + "\r"))
-               ? MIIO_ERROR
-               : MIIO_OK);
-      result |=
-          ((UART_RECV_ACK_ERROR ==
-            sendStrWaitAck(String("mcu_version ") + String(mcuVersion) + "\r"))
-               ? MIIO_ERROR
-               : MIIO_OK);
-      result |=
-          ((UART_RECV_ACK_ERROR ==
-            sendStrWaitAck(
-                String("ble_config set ") + String(blePid) + String(" ") +
-                String(mcuVersion) + "\r"))
-               ? MIIO_ERROR
-               : MIIO_OK);
-
-      delay(_pollIntervalMs);
-    } while (result != MIIO_OK);
-  }
+  begin(String(model), String(blePid), String(mcuVersion));
 }
 
 void SerialMIIO::begin(String model, String blePid, String mcuVersion) {
-  begin(model.c_str(), blePid.c_str(), mcuVersion.c_str());
+  _model = model;
+  _blePid = blePid;
+  _mcuVersion = mcuVersion;
+  _handleXiaomiSetup(0);
 }
 
 void SerialMIIO::loop() {
-  if (millis() - _lastPoll < _pollIntervalMs) {
-    return;
-  }
-  _lastPoll = millis();
-
-  /* clear command string buffer */
-  memset(_cmd, 0, CMD_BUF_SIZE);
-  memset(_method, 0, CMD_METHOD_MAX_LEN);
-
-  sendStr("get_down\r");
-
-  // FIXME: 目前会卡住 loop，直到超时
-  // 需要改成非阻塞的方式
-
-  size_t nRecv = recvStr(_cmd, CMD_BUF_SIZE);
-
-  if (nRecv <= 0) {
-    DEBUG_MIIO("[SerialMIIO]uart connected error or module rebooting...");
-    return;
-  }
-
-  if (_cmd[nRecv - 1] != END_CHAR) {
-    DEBUG_MIIO("[SerialMIIO]uart recv error[%s]", _cmd);
-    return;
-  }
-
-  size_t methodLen = sizeof(_method);
-  int ret = uart_comamnd_decoder(_cmd, nRecv, _method, &methodLen);
-  if (MIIO_OK != ret) { /* judge if string decoded correctly */
-    DEBUG_MIIO("[SerialMIIO]get method failed[%s]", _cmd);
-    return;
-  }
-
-  if (methodLen > 0 &&
-      _method != NULL) { /* start to find if method contained */
-    auto callback = callbackFindByMethod(_method);
-    if (NULL == callback) {
-      if (strcmp(ERROR_STRING, _method) && strcmp(OK_STRING, _method)) {
-        sendErrorCode(ERROR_MESSAGE_UNCMD, ERROR_CODE_UNCMD);
-        DEBUG_MIIO("[SerialMIIO]undefined command: %s", _method);
-      }
-    } else {
-      DEBUG_MIIO("[SerialMIIO]found method: %s", _method);
-      callback(_cmd, nRecv);
-    }
-  } else {
-    DEBUG_MIIO("[SerialMIIO]unknown command: %s", (char *)_cmd);
-  }
+  _read();
 }
 
 void SerialMIIO::setSerialTimeout(unsigned long timeout) {
@@ -166,35 +94,9 @@ void SerialMIIO::setReceiveRetry(unsigned int retry) {
   _receiveRetry = retry;
 }
 
-size_t SerialMIIO::recvStr(char *buffer, size_t length) {
-  int nRead = _readBytes(buffer, length);
+size_t SerialMIIO::sendStr(const char *str, ReceiveCallback callback) {
+  _receiveCallbacks.push_back(callback);
 
-  int retry = 0;
-  while (buffer[nRead > 0 ? (nRead - 1) : 0] != END_CHAR &&
-         retry < _receiveRetry) {
-    if (nRead >= length) {
-      DEBUG_MIIO(
-          "[SerialMIIO]out of buffer %d %d retry=%d", length, nRead, retry);
-      memset(buffer, 0, length);
-      nRead = 0;
-      retry = 0;
-    }
-    nRead = nRead + _readBytes(buffer + nRead, length - nRead);
-    retry++;
-  }
-
-  buffer[nRead] = '\0';
-
-  if (nRead > 0) {
-    DEBUG_MIIO("[SerialMIIO]recv string : %s", buffer);
-  } else {
-    DEBUG_MIIO("[SerialMIIO]recv string : null");
-  }
-
-  return nRead;
-}
-
-size_t SerialMIIO::sendStr(const char *str) {
   int len = strlen(str);
   if (len <= 0) {
     return UART_OK;
@@ -212,8 +114,8 @@ size_t SerialMIIO::sendStr(const char *str) {
   return nSend;
 }
 
-size_t SerialMIIO::sendStr(String str) {
-  return sendStr(str.c_str());
+size_t SerialMIIO::sendStr(String str, ReceiveCallback callback) {
+  return sendStr(str.c_str(), callback);
 }
 
 size_t SerialMIIO::sendStrWaitAck(const char *str) {
@@ -222,30 +124,23 @@ size_t SerialMIIO::sendStrWaitAck(const char *str) {
     return UART_OK;
   }
 
-  size_t nSend = _serial->write(str);
-
-  if (nSend < len) {
-    DEBUG_MIIO("[SerialMIIO]send string failed 1");
-    return UART_SEND_ERROR;
-  }
-
-  DEBUG_MIIO("[SerialMIIO]send string: %s", str);
-
-  char ackBuf[ACK_BUF_SIZE] = {0};
-  memset(ackBuf, 0, ACK_BUF_SIZE);
-
-  recvStr(ackBuf, ACK_BUF_SIZE);
-
-  if (0 != strncmp((const char *)ackBuf, "ok", strlen("ok"))) {
-    DEBUG_MIIO("[SerialMIIO]send string wait ack failed 2, str=%s", ackBuf);
-    return UART_RECV_ACK_ERROR;
-  }
+  size_t nSend = sendStr(
+      str, std::bind(&SerialMIIO::_handleAck, this, std::placeholders::_1));
 
   return nSend;
 }
 
+size_t SerialMIIO::sendStrWaitAck(const char *str, AckResultCallback callback) {
+  _ackResultCallback = callback;
+  return sendStrWaitAck(str);
+}
+
 size_t SerialMIIO::sendStrWaitAck(String str) {
   return sendStrWaitAck(str.c_str());
+}
+
+size_t SerialMIIO::sendStrWaitAck(String str, AckResultCallback callback) {
+  return sendStrWaitAck(str.c_str(), callback);
 }
 
 int SerialMIIO::sendResponse(const char *response) {
@@ -642,29 +537,29 @@ void SerialMIIO::_onPropertySet(property_operation_t *o) {
   callback(o);
 }
 
-void SerialMIIO::_defaultGetPropertiesCallback(char *cmd, size_t length) {
+void SerialMIIO::_defaultGetPropertiesCallback(const char *cmd, size_t length) {
   DEBUG_MIIO("[SerialMIIO]down get_properties default callback");
 
   executePropertyOperation(cmd, length, PROPERTY_OPERATION_GET);
 }
 
-void SerialMIIO::_defaultSetPropertyCallback(char *cmd, size_t length) {
+void SerialMIIO::_defaultSetPropertyCallback(const char *cmd, size_t length) {
   DEBUG_MIIO("[SerialMIIO]down set_properties default callback");
 
   executePropertyOperation(cmd, length, PROPERTY_OPERATION_SET);
 }
 
-void SerialMIIO::_defaultinvokeActionCallback(char *cmd, size_t length) {
+void SerialMIIO::_defaultinvokeActionCallback(const char *cmd, size_t length) {
   DEBUG_MIIO("[SerialMIIO]down action default callback");
 
   executeActionInvocation(cmd, length);
 }
 
-void SerialMIIO::_defaultinvokeNoneCallback(char *cmd, size_t length) {
+void SerialMIIO::_defaultinvokeNoneCallback(const char *cmd, size_t length) {
   DEBUG_MIIO("[SerialMIIO]down none default callback");
 }
 
-void SerialMIIO::_defaultMCUVersionCallback(char *cmd, size_t length) {
+void SerialMIIO::_defaultMCUVersionCallback(const char *cmd, size_t length) {
   DEBUG_MIIO("[SerialMIIO]down mcu_version_req default callback");
 
   char result[CMD_BUF_SIZE] = {0};
@@ -673,29 +568,181 @@ void SerialMIIO::_defaultMCUVersionCallback(char *cmd, size_t length) {
   sendResponse(result);
 }
 
-size_t SerialMIIO::_readBytes(char *buffer, size_t length) {
-  size_t count = 0;
-  while (count < length) {
-    int c = _timedRead();
-    if (c < 0) {
+void SerialMIIO::_read() {
+  if (!_getDownSend &&
+      (millis() - _lastPoll > _pollIntervalMs || _lastPoll == 0)) {
+    _lastPoll = millis();
+
+    _cmd.clear();
+
+    sendStr(
+        GET_DOWN_STRING,
+        std::bind(
+            &SerialMIIO::_handleGetDownSend, this, std::placeholders::_1));
+
+    _getDownSend = true;
+  }
+
+  // 超时时增加重试次数
+  if (_serial->available() <= 0 &&
+      millis() - _serialStartMillis > _serialTimeout) {
+    DEBUG_MIIO("[SerialMIIO]read timeout");
+    _retry++;
+    _serialStartMillis = 0;
+    return;
+  }
+
+  while (_serial->available() > 0) {
+    _cmd += _serial->read();
+    _serialStartMillis = millis();
+
+    if (_cmd.length() > CMD_BUF_SIZE) {
+      DEBUG_MIIO("[SerialMIIO]cmd too long %d retry=%d", _cmd.length(), _retry);
+      _cmd.clear();
+      _retry = 0;
+    }
+
+    if (_cmd.endsWith(END_STRING)) {
+      DEBUG_MIIO("[SerialMIIO]cmd end");
+      _executeReceiveCallbacks(_cmd);
+      _cmd.clear();
+      _retry = 0;
       break;
     }
-    *buffer++ = (char)c;
-    count++;
   }
-  return count;
+
+  if (_retry > _receiveRetry) {
+    DEBUG_MIIO("[SerialMIIO]read retry too many times");
+    _executeReceiveCallbacks(_cmd);
+    _cmd.clear();
+    _retry = 0;
+    return;
+  }
 }
 
-int SerialMIIO::_timedRead() {
-  int c;
-  _serialStartMillis = millis();
-  do {
-    c = _serial->read();
-    if (c >= 0) {
-      return c;
+void SerialMIIO::_executeReceiveCallbacks(String &cmd) {
+  if (_receiveCallbacks.size() <= 0) {
+    return;
+  }
+
+  _receiveCallbacks.back()(cmd);
+  _receiveCallbacks.pop_back();
+}
+
+void SerialMIIO::_handleXiaomiSetup(int result) {
+  DEBUG_MIIO(
+      "[SerialMIIO]handle xiaomi setup, %s, result %s",
+      _setupStatus,
+      result ? "success" : "failed");
+
+  String cmd;
+  cmd.reserve(CMD_BUF_SIZE);
+
+  switch (_setupStatus) {
+  case SETUP_INIT:
+    cmd += "echo off\r";
+    sendStrWaitAck(
+        cmd,
+        std::bind(
+            &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
+    _setupStatus = SETUP_ECHO;
+    break;
+  case SETUP_ECHO:
+    if (result) {
+      _xiaomiSetupResult |= SETUP_ECHO;
     }
-    // 如果没有读取到数据，则交出控制权
-    vTaskDelay(1);
-  } while (millis() - _serialStartMillis < _serialTimeout);
-  return -1; // -1 indicates timeout
+
+    cmd += "model ";
+    cmd += _model;
+    cmd += "\r";
+    sendStrWaitAck(
+        cmd,
+        std::bind(
+            &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
+    _setupStatus = SETUP_MODEL;
+    break;
+  case SETUP_MODEL:
+    if (result) {
+      _xiaomiSetupResult |= SETUP_MODEL;
+    }
+    cmd += "ble ";
+    cmd += _blePid;
+    cmd += "\r";
+    sendStrWaitAck(
+        cmd,
+        std::bind(
+            &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
+    _setupStatus = SETUP_BLE_PID;
+    break;
+  case SETUP_BLE_PID:
+    if (result) {
+      _xiaomiSetupResult |= SETUP_BLE_PID;
+    }
+    cmd += "mcu_version ";
+    cmd += _mcuVersion;
+    cmd += "\r";
+    sendStrWaitAck(
+        cmd,
+        std::bind(
+            &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
+    _setupStatus = SETUP_MCU_VERSION;
+    break;
+  case SETUP_MCU_VERSION:
+    if (result) {
+      _xiaomiSetupResult |= SETUP_MCU_VERSION;
+    }
+
+    if (_xiaomiSetupResult == SETUP_INIT) {
+      DEBUG_MIIO("[SerialMIIO]xiaomi setup success");
+    } else {
+      _setupStatus = SETUP_INIT;
+      _xiaomiSetupResult = 0;
+      DEBUG_MIIO("[SerialMIIO]xiaomi setup failed");
+    }
+    break;
+  default:
+    break;
+  }
+}
+
+void SerialMIIO::_handleGetDownSend(String &cmd) {
+  DEBUG_MIIO("[SerialMIIO]handle get down send: %s", cmd);
+
+  char method[CMD_BUF_SIZE] = {0};
+  size_t methodLen = sizeof(method);
+  int ret =
+      uart_comamnd_decoder(_cmd.c_str(), cmd.length(), method, &methodLen);
+  if (MIIO_OK != ret) { /* judge if string decoded correctly */
+    DEBUG_MIIO("[SerialMIIO]get method failed[%s]", _cmd);
+    return;
+  }
+
+  if (methodLen > 0 && method != NULL) { /* start to find if method contained */
+    auto callback = callbackFindByMethod(method);
+    if (NULL == callback) {
+      if (strcmp(ERROR_STRING, method) && strcmp(OK_STRING, method)) {
+        sendErrorCode(ERROR_MESSAGE_UNCMD, ERROR_CODE_UNCMD);
+        DEBUG_MIIO("[SerialMIIO]undefined command: %s", method);
+      }
+    } else {
+      DEBUG_MIIO("[SerialMIIO]found method: %s", method);
+      callback(_cmd.c_str(), cmd.length());
+    }
+  } else {
+    DEBUG_MIIO("[SerialMIIO]unknown command: %s", _cmd);
+  }
+}
+
+void SerialMIIO::_handleAck(String &cmd) {
+  DEBUG_MIIO("[SerialMIIO]handle ack: %s", cmd);
+
+  bool isOk = cmd.startsWith(OK_STRING);
+  if (!isOk) {
+    DEBUG_MIIO("[SerialMIIO]send string wait ack failed, str=%s", cmd);
+  }
+
+  if (NULL != _ackResultCallback) {
+    _ackResultCallback(isOk);
+    _ackResultCallback = NULL;
+  }
 }

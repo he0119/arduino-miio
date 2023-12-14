@@ -2,7 +2,7 @@
 #include "miio/miio_define.h"
 
 int uart_comamnd_decoder(
-    char *pbuf, uint32_t buf_sz, char *method, uint32_t *method_len) {
+    const char *pbuf, uint32_t buf_sz, char *method, uint32_t *method_len) {
   char *cmd_buf = (char *)malloc(buf_sz);
   if (NULL == cmd_buf || NULL == pbuf) {
     goto error_exit;

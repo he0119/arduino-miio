@@ -2,6 +2,7 @@
 #define _SerialMIIO_H_
 
 #include <map>
+#include <vector>
 
 #include "Arduino.h"
 
@@ -41,9 +42,20 @@ extern "C" {
 #endif
 
 /* ==================== callback function define ==================== */
-typedef std::function<void(char *cmd, size_t length)> MethodCallback;
+typedef std::function<void(const char *cmd, size_t length)> MethodCallback;
 typedef std::function<void(property_operation_t *o)> PropertyCallback;
 typedef std::function<void(action_operation_t *o)> ActionInvokeCallback;
+typedef std::function<void(String &cmd)> ReceiveCallback;
+typedef std::function<void(int result)> AckResultCallback;
+
+/* ==================== user define ==================== */
+enum SetupStatus {
+  SETUP_ECHO = 1,
+  SETUP_MODEL = 2,
+  SETUP_BLE_PID = 4,
+  SETUP_MCU_VERSION = 8,
+  SETUP_INIT = 15,
+};
 
 class SerialMIIO {
 public:
@@ -106,13 +118,17 @@ public:
 
   size_t recvStr(char *buffer, size_t length);
 
-  size_t sendStr(const char *str);
+  size_t sendStr(const char *str, ReceiveCallback callback);
 
-  size_t sendStr(String str);
+  size_t sendStr(String str, ReceiveCallback callback);
 
   size_t sendStrWaitAck(const char *str);
 
+  size_t sendStrWaitAck(const char *str, AckResultCallback callback);
+
   size_t sendStrWaitAck(String str);
+
+  size_t sendStrWaitAck(String str, AckResultCallback callback);
 
   int sendErrorCode(const char *msg, int errcode);
 
@@ -135,20 +151,29 @@ public:
 
 private:
   Stream *_serial;
-  const char *_mcuVersion = "0001";
+  String _model;
+  String _blePid;
+  String _mcuVersion;
+
+  byte _xiaomiSetupResult = 0;
+  SetupStatus _setupStatus = SETUP_INIT;
+  bool _getDownSend = false;
 
   unsigned long _lastPoll = 0;
   unsigned long _pollIntervalMs = USER_POLL_INTERVAL_MS;
 
   unsigned long _serialStartMillis = 0;
   unsigned long _serialTimeout = USER_UART_TIMEOUT_MS;
-  size_t _readBytes(char *buffer, size_t length);
-  int _timedRead();
 
+  AckResultCallback _ackResultCallback = NULL;
+  std::vector<ReceiveCallback> _receiveCallbacks;
+  void _read();
+  void _executeReceiveCallbacks(String &cmd);
+
+  int _retry = 0;
   unsigned int _receiveRetry = USER_RECEIVE_RETRY;
 
-  char _cmd[CMD_BUF_SIZE] = {0};
-  char _method[CMD_METHOD_MAX_LEN] = {0};
+  String _cmd;
 
   std::map<String, MethodCallback> _methodCallbacks;
   std::map<std::pair<uint32_t, uint32_t>, PropertyCallback>
@@ -161,11 +186,15 @@ private:
   void _onPropertyGet(property_operation_t *o);
   void _onPropertySet(property_operation_t *o);
   void _onActionInvoke(action_operation_t *o);
-  void _defaultGetPropertiesCallback(char *cmd, size_t length);
-  void _defaultSetPropertyCallback(char *cmd, size_t length);
-  void _defaultinvokeActionCallback(char *cmd, size_t length);
-  void _defaultinvokeNoneCallback(char *cmd, size_t length);
-  void _defaultMCUVersionCallback(char *cmd, size_t length);
+  void _defaultGetPropertiesCallback(const char *cmd, size_t length);
+  void _defaultSetPropertyCallback(const char *cmd, size_t length);
+  void _defaultinvokeActionCallback(const char *cmd, size_t length);
+  void _defaultinvokeNoneCallback(const char *cmd, size_t length);
+  void _defaultMCUVersionCallback(const char *cmd, size_t length);
+
+  void _handleXiaomiSetup(int result);
+  void _handleGetDownSend(String &cmd);
+  void _handleAck(String &cmd);
 };
 
 #endif
