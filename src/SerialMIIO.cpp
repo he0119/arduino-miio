@@ -76,7 +76,7 @@ void SerialMIIO::begin(String model, String blePid, String mcuVersion) {
   _blePid = blePid;
   _mcuVersion = mcuVersion;
 
-  _handleXiaomiSetup(0);
+  _handleXiaomiSetup(false);
 }
 
 void SerialMIIO::loop() {
@@ -132,7 +132,7 @@ size_t SerialMIIO::sendStrWaitAck(const char *str) {
 }
 
 size_t SerialMIIO::sendStrWaitAck(const char *str, AckResultCallback callback) {
-  _ackResultCallback = callback;
+  _ackResultCallbacks.push_back(callback);
   return sendStrWaitAck(str);
 }
 
@@ -623,18 +623,6 @@ void SerialMIIO::_read() {
   }
 }
 
-void SerialMIIO::_executeReceiveCallbacks(String &cmd) {
-  DEBUG_MIIO("[SerialMIIO]execute receive callbacks");
-
-  if (_receiveCallbacks.size() <= 0) {
-    DEBUG_MIIO("[SerialMIIO]no receive callback");
-    return;
-  }
-
-  _receiveCallbacks.back()(cmd);
-  _receiveCallbacks.pop_back();
-}
-
 void SerialMIIO::_handleXiaomiSetup(bool result) {
   DEBUG_MIIO(
       "[SerialMIIO]handle xiaomi setup, %d, result %s",
@@ -707,6 +695,7 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
     } else {
       _setupStatus = SETUP_INIT;
       _xiaomiSetupResult = 0;
+      _handleXiaomiSetup(false);
       DEBUG_MIIO("[SerialMIIO]xiaomi setup failed");
     }
     break;
@@ -749,10 +738,29 @@ void SerialMIIO::_handleAck(String &cmd) {
     DEBUG_MIIO("[SerialMIIO]send string wait ack failed, str=%s", cmd);
   }
 
-  if (NULL != _ackResultCallback) {
-    _ackResultCallback(isOk);
-    _ackResultCallback = NULL;
-  } else {
-    DEBUG_MIIO("[SerialMIIO]no ack result callback");
+  _executeackResultCallbacks(isOk);
+}
+
+void SerialMIIO::_executeReceiveCallbacks(String &cmd) {
+  DEBUG_MIIO("[SerialMIIO]execute receive callbacks");
+
+  if (_receiveCallbacks.size() <= 0) {
+    DEBUG_MIIO("[SerialMIIO]no receive callback");
+    return;
   }
+
+  _receiveCallbacks.back()(cmd);
+  _receiveCallbacks.pop_back();
+}
+
+void SerialMIIO::_executeackResultCallbacks(bool result) {
+  DEBUG_MIIO("[SerialMIIO]execute ack result callbacks");
+
+  if (_ackResultCallbacks.size() <= 0) {
+    DEBUG_MIIO("[SerialMIIO]no ack result callback");
+    return;
+  }
+
+  _ackResultCallbacks.back()(result);
+  _ackResultCallbacks.pop_back();
 }

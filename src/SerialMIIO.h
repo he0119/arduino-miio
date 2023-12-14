@@ -166,10 +166,11 @@ private:
   unsigned long _serialStartMillis = 0;
   unsigned long _serialTimeout = USER_UART_TIMEOUT_MS;
 
-  AckResultCallback _ackResultCallback = NULL;
+  std::vector<AckResultCallback> _ackResultCallbacks;
   std::vector<ReceiveCallback> _receiveCallbacks;
   void _read();
   void _executeReceiveCallbacks(String &cmd);
+  void _executeackResultCallbacks(bool result);
 
   int _retry = 0;
   unsigned int _receiveRetry = USER_RECEIVE_RETRY;
