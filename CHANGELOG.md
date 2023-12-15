@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/lang/zh-CN/
 ### Changed
 
 - 使用回调函数优化代码
+- 使用 String 且发送时自动添加 \r
 
 ## 0.0.5 - 2023-12-13
 

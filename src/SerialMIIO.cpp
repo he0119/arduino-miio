@@ -75,8 +75,6 @@ void SerialMIIO::begin(String model, String blePid, String mcuVersion) {
   _model = model;
   _blePid = blePid;
   _mcuVersion = mcuVersion;
-
-  _handleXiaomiSetup(false);
 }
 
 void SerialMIIO::setSerialTimeout(unsigned long timeout) {
@@ -91,19 +89,24 @@ void SerialMIIO::setReceiveRetry(unsigned int retry) {
   _receiveRetry = retry;
 }
 
-size_t SerialMIIO::sendStr(const char *str, ReceiveCallback callback) {
+size_t SerialMIIO::sendStr(const String &str, ReceiveCallback callback) {
   _receiveCallback = callback;
 
-  int len = strlen(str);
-  if (len <= 0) {
+  if (str.isEmpty()) {
     return UART_OK;
   }
+  size_t length = str.length();
 
-  DEBUG_MIIO("[SerialMIIO]send string: %s", str);
+  size_t nSend = _serial->print(str);
+  // 如果字符串没有以 \r 结尾，则补上
+  if (!str.endsWith("\r")) {
+    nSend += _serial->print("\r");
+    length += 1;
+  }
 
-  int nSend = _serial->write(str);
+  DEBUG_MIIO("[SerialMIIO]send string: %s", str.c_str());
 
-  if (nSend < len) {
+  if (nSend < str.length()) {
     DEBUG_MIIO("[SerialMIIO]send string failed");
     return UART_SEND_ERROR;
   }
@@ -111,13 +114,12 @@ size_t SerialMIIO::sendStr(const char *str, ReceiveCallback callback) {
   return nSend;
 }
 
-size_t SerialMIIO::sendStr(String str, ReceiveCallback callback) {
-  return sendStr(str.c_str(), callback);
+size_t SerialMIIO::sendStr(const char *str, ReceiveCallback callback) {
+  return sendStr(String(str), callback);
 }
 
-size_t SerialMIIO::sendStrWaitAck(const char *str) {
-  size_t len = strlen(str);
-  if (len <= 0) {
+size_t SerialMIIO::sendStrWaitAck(const String &str) {
+  if (str.isEmpty()) {
     return UART_OK;
   }
 
@@ -127,26 +129,26 @@ size_t SerialMIIO::sendStrWaitAck(const char *str) {
   return nSend;
 }
 
+size_t SerialMIIO::sendStrWaitAck(const char *str) {
+  return sendStrWaitAck(String(str));
+}
+
+size_t
+SerialMIIO::sendStrWaitAck(const String &str, AckResultCallback callback) {
+  _ackResultCallback = callback;
+  return sendStrWaitAck(str);
+}
+
 size_t SerialMIIO::sendStrWaitAck(const char *str, AckResultCallback callback) {
   _ackResultCallback = callback;
   return sendStrWaitAck(str);
 }
 
-size_t SerialMIIO::sendStrWaitAck(String str) {
-  return sendStrWaitAck(str.c_str());
-}
-
-size_t SerialMIIO::sendStrWaitAck(String str, AckResultCallback callback) {
-  return sendStrWaitAck(str.c_str(), callback);
-}
-
-int SerialMIIO::sendResponse(const char *response) {
+int SerialMIIO::sendResponse(const String &response) {
   int ret = MIIO_OK;
 
-  size_t length = strlen(response);
-
-  if (NULL == response || length <= 0) {
-    DEBUG_MIIO("[SerialMIIO]response is null");
+  if (response.isEmpty()) {
+    DEBUG_MIIO("[SerialMIIO]response is empty");
     return MIIO_ERROR;
   }
 
@@ -157,22 +159,32 @@ int SerialMIIO::sendResponse(const char *response) {
     return MIIO_ERROR;
   }
 
-  if (nSend < length) {
+  if (nSend < response.length()) {
     DEBUG_MIIO("[SerialMIIO]uart send result incomplete");
     ret = MIIO_ERROR;
   }
   return ret;
 }
 
-int SerialMIIO::sendErrorCode(const char *msg, int errcode) {
-  char sendMsg[CMD_BUF_SIZE] = {0};
-  memset(sendMsg, 0, CMD_BUF_SIZE);
-  snprintf(sendMsg, CMD_BUF_SIZE, "\"%s\" %d", msg, errcode);
+int SerialMIIO::sendResponse(const char *response) {
+  return sendResponse(String(response));
+}
 
-  char result[CMD_BUF_SIZE] = {0};
-  str_n_cat(result, 2, "error ", sendMsg);
-  action_operation_encode_tail(result, sizeof(result));
+int SerialMIIO::sendErrorCode(const String &msg, int errcode) {
+  String result;
+  result.reserve(CMD_BUF_SIZE);
+
+  result += "error ";
+  result += "\"";
+  result += msg;
+  result += "\" ";
+  result += errcode;
+
   return sendResponse(result);
+}
+
+int SerialMIIO::sendErrorCode(const char *msg, int errcode) {
+  return sendErrorCode(String(msg), errcode);
 }
 
 int SerialMIIO::sendPropertyChanged(
@@ -324,7 +336,6 @@ int SerialMIIO::executePropertyOperation(
       break;
     }
 
-    property_operation_encode_tail(result, CMD_BUF_SIZE);
     sendResponse(result);
   } while (false);
 
@@ -400,7 +411,6 @@ int SerialMIIO::executeActionInvocation(const char *cmd, size_t length) {
       break;
     }
 
-    action_operation_encode_tail(result, sizeof(result));
     sendResponse(result);
   } while (false);
 
@@ -560,9 +570,11 @@ void SerialMIIO::_defaultinvokeNoneCallback(const char *cmd, size_t length) {
 void SerialMIIO::_defaultMCUVersionCallback(const char *cmd, size_t length) {
   DEBUG_MIIO("[SerialMIIO]down mcu_version_req default callback");
 
-  char result[CMD_BUF_SIZE] = {0};
-  str_n_cat(result, 2, "mcu_version ", _mcuVersion);
-  action_operation_encode_tail(result, sizeof(result));
+  String result;
+  result.reserve(CMD_BUF_SIZE);
+  result += "mcu_version ";
+  result += _mcuVersion;
+
   sendResponse(result);
 }
 
@@ -597,12 +609,8 @@ void SerialMIIO::_sendGetDown() {
   _cmd.clear();
   _needGetDown = false;
 
-  String getDownString;
-  getDownString.reserve(5);
-  getDownString += GET_DOWN_STRING;
-  getDownString += "\r";
   sendStr(
-      getDownString,
+      GET_DOWN_STRING,
       std::bind(&SerialMIIO::_handleGetDown, this, std::placeholders::_1));
 }
 
@@ -684,7 +692,7 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
     if (result) {
       _setupStatus = SETUP_MODEL;
     } else {
-      sendCmd += "echo off\r";
+      sendCmd += "echo off";
 
       sendStrWaitAck(
           sendCmd,
@@ -698,7 +706,6 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
     } else {
       sendCmd += "model ";
       sendCmd += _model;
-      sendCmd += "\r";
       sendStrWaitAck(
           sendCmd,
           std::bind(
@@ -714,7 +721,6 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
       sendCmd += _blePid;
       sendCmd += " ";
       sendCmd += _mcuVersion;
-      sendCmd += "\r";
       sendStrWaitAck(
           sendCmd,
           std::bind(
@@ -727,7 +733,6 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
     } else {
       sendCmd += "mcu_version ";
       sendCmd += _mcuVersion;
-      sendCmd += "\r";
       sendStrWaitAck(
           sendCmd,
           std::bind(

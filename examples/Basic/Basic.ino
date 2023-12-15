@@ -8,10 +8,13 @@ void setup() {
   Serial.begin(115200);
   Serial2.begin(115200);
 
-  // 可通过以下函数设置模组的一些参数
-  // miio.setPollInterval(5000);
-  // miio.setSerialTimeout(2000);
-  // miio.setReceiveRetry(1);
+  // 可通过以下函数设置运行参数
+  miio.setPollInterval(200);
+  miio.setSerialTimeout(200);
+  miio.setReceiveRetry(25);
+
+  // log_level 范围为 0 ~ 5, 0 表示开启 debug 日志，5 表示关闭日志打印。
+  miio.sendStrWaitAck("set_log_level 0");
 
   miio.begin("perdev.switch.004", "18031", "0001");
 

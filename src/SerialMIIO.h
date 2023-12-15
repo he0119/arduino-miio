@@ -84,7 +84,7 @@ public:
   /**
    * @brief 设置轮询间隔时间。
    *
-   * @note 时间范围要求 100~200ms，推荐的循环周期为200ms，
+   * @note 时间范围要求 100~200ms，推荐的循环周期为 200ms，默认为 200ms。
    * https://iot.mi.com/v2/new/doc/embedded-dev/module-dev/function-dev/mcu-dev#命令规范
    * @param interval 轮询间隔时间，单位为毫秒。
    */
@@ -93,6 +93,7 @@ public:
   /**
    * @brief 设置接收重试次数
    *
+   * @note 默认为 25 次
    * @param retry 重试次数
    */
   void setReceiveRetry(unsigned int retry);
@@ -114,21 +115,19 @@ public:
 
   PropertyCallback callbackFindByPropertySet(uint32_t siid, uint32_t piid);
 
-  size_t recvStr(char *buffer, size_t length);
+  size_t sendStr(const String &str, ReceiveCallback callback);
 
   size_t sendStr(const char *str, ReceiveCallback callback);
 
-  size_t sendStr(String str, ReceiveCallback callback);
+  size_t sendStrWaitAck(const String &str);
 
   size_t sendStrWaitAck(const char *str);
 
+  size_t sendStrWaitAck(const String &str, AckResultCallback callback);
+
   size_t sendStrWaitAck(const char *str, AckResultCallback callback);
 
-  size_t sendStrWaitAck(String str);
-
-  size_t sendStrWaitAck(String str, AckResultCallback callback);
-
-  int sendErrorCode(const char *msg, int errcode);
+  int sendResponse(const String &response);
 
   /**
    * @brief 发送回复
@@ -136,6 +135,10 @@ public:
    * @return 发送状态，0 为成功，其他为失败
    */
   int sendResponse(const char *response);
+
+  int sendErrorCode(const String &msg, int errcode);
+
+  int sendErrorCode(const char *msg, int errcode);
 
   int sendPropertyChanged(
       uint32_t siid, uint32_t piid, property_value_t *newValue);
@@ -149,6 +152,7 @@ public:
 
 private:
   Stream *_serial;
+
   String _model;
   String _blePid;
   String _mcuVersion;
