@@ -92,7 +92,6 @@ void SerialMIIO::setReceiveRetry(unsigned int retry) {
 }
 
 size_t SerialMIIO::sendStr(const char *str, ReceiveCallback callback) {
-  DEBUG_MIIO("[SerialMIIO]send str and callback");
   _receiveCallback = callback;
 
   int len = strlen(str);
@@ -100,14 +99,14 @@ size_t SerialMIIO::sendStr(const char *str, ReceiveCallback callback) {
     return UART_OK;
   }
 
+  DEBUG_MIIO("[SerialMIIO]send string: %s", str);
+
   int nSend = _serial->write(str);
 
   if (nSend < len) {
     DEBUG_MIIO("[SerialMIIO]send string failed");
     return UART_SEND_ERROR;
   }
-
-  DEBUG_MIIO("[SerialMIIO]send string: %s", str);
 
   return nSend;
 }
@@ -212,9 +211,9 @@ int SerialMIIO::sendPropertyChanged(
 }
 
 int SerialMIIO::sendEventOccurred(event_operation_t *event) {
-  int ret = MIIO_OK;
-
   DEBUG_MIIO("[SerialMIIO]event occurred");
+
+  int ret = MIIO_OK;
 
   if (NULL == event) {
     ret = MIIO_ERROR_PARAM;
@@ -739,7 +738,7 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
 }
 
 void SerialMIIO::_handleGetDown(String &cmd) {
-  DEBUG_MIIO("[SerialMIIO]handle get down: %s", cmd);
+  DEBUG_MIIO("[SerialMIIO]handle get down: %s", cmd.c_str());
   _needGetDown = true;
 
   char method[CMD_BUF_SIZE] = {0};
@@ -747,7 +746,7 @@ void SerialMIIO::_handleGetDown(String &cmd) {
   int ret =
       uart_comamnd_decoder(_cmd.c_str(), cmd.length(), method, &methodLen);
   if (MIIO_OK != ret) { /* judge if string decoded correctly */
-    DEBUG_MIIO("[SerialMIIO]get method failed[%s]", _cmd);
+    DEBUG_MIIO("[SerialMIIO]get method failed");
     return;
   }
 
@@ -756,23 +755,23 @@ void SerialMIIO::_handleGetDown(String &cmd) {
     if (NULL == callback) {
       if (strcmp(ERROR_STRING, method) && strcmp(OK_STRING, method)) {
         sendErrorCode(ERROR_MESSAGE_UNCMD, ERROR_CODE_UNCMD);
-        DEBUG_MIIO("[SerialMIIO]undefined command: %s", method);
+        DEBUG_MIIO("[SerialMIIO]undefined method: %s", method);
       }
     } else {
       DEBUG_MIIO("[SerialMIIO]found method: %s", method);
       callback(_cmd.c_str(), cmd.length());
     }
   } else {
-    DEBUG_MIIO("[SerialMIIO]unknown command: %s", _cmd);
+    DEBUG_MIIO("[SerialMIIO]unknown method: %s", method);
   }
 }
 
 void SerialMIIO::_handleAck(String &cmd) {
-  DEBUG_MIIO("[SerialMIIO]handle ack: %s", cmd);
+  DEBUG_MIIO("[SerialMIIO]handle ack: %s", cmd.c_str());
 
   bool isOk = cmd.startsWith(OK_STRING);
   if (!isOk) {
-    DEBUG_MIIO("[SerialMIIO]send string wait ack failed, str=%s", cmd);
+    DEBUG_MIIO("[SerialMIIO]send string wait ack failed");
   }
 
   _executeackResultCallbacks(isOk);
