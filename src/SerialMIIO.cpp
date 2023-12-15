@@ -594,13 +594,17 @@ void SerialMIIO::_sendGetDown() {
     return;
   }
   // 以上情况均不发送 get_down
+  _lastPoll = millis();
   _cmd.clear();
-
-  sendStr(
-      GET_DOWN_STRING,
-      std::bind(&SerialMIIO::_handleGetDown, this, std::placeholders::_1));
-
   _needGetDown = false;
+
+  String getDownString;
+  getDownString.reserve(5);
+  getDownString += GET_DOWN_STRING;
+  getDownString += "\r";
+  sendStr(
+      getDownString,
+      std::bind(&SerialMIIO::_handleGetDown, this, std::placeholders::_1));
 }
 
 void SerialMIIO::_read() {
@@ -736,6 +740,7 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
 
 void SerialMIIO::_handleGetDown(String &cmd) {
   DEBUG_MIIO("[SerialMIIO]handle get down: %s", cmd);
+  _needGetDown = true;
 
   char method[CMD_BUF_SIZE] = {0};
   size_t methodLen = sizeof(method);
@@ -760,7 +765,6 @@ void SerialMIIO::_handleGetDown(String &cmd) {
   } else {
     DEBUG_MIIO("[SerialMIIO]unknown command: %s", _cmd);
   }
-  _needGetDown = true;
 }
 
 void SerialMIIO::_handleAck(String &cmd) {
