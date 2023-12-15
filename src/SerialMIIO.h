@@ -49,12 +49,11 @@ class SerialMIIO {
   using AckResultCallback = std::function<void(int result)>;
 
   enum SetupStatus {
-    SETUP_INIT = 0,
-    SETUP_ECHO = 1,
-    SETUP_MODEL = 2,
-    SETUP_BLE_PID = 4,
-    SETUP_MCU_VERSION = 8,
-    SETUP_OK = 15,
+    SETUP_ECHO,
+    SETUP_MODEL,
+    SETUP_BLE_PID,
+    SETUP_MCU_VERSION,
+    SETUP_OK,
   };
 
 public:
@@ -154,8 +153,7 @@ private:
   String _blePid;
   String _mcuVersion;
 
-  byte _xiaomiSetupResult = 0;
-  SetupStatus _setupStatus = SETUP_INIT;
+  SetupStatus _setupStatus = SETUP_ECHO;
   // 是否需要发送 get_down
   bool _needGetDown = true;
 

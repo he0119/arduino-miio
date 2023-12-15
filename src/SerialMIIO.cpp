@@ -575,6 +575,11 @@ void SerialMIIO::loop() {
 void SerialMIIO::_sendGetDown() {
   // 没有初始化成功
   if (_setupStatus != SETUP_OK) {
+    if (millis() - _lastPoll > _pollIntervalMs &&
+        _receiveCallbacks.size() <= 0) {
+      _lastPoll = millis();
+      _handleXiaomiSetup(false);
+    }
     return;
   }
   // 需要发送 get_down
@@ -673,70 +678,58 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
   sendCmd.reserve(CMD_BUF_SIZE);
 
   switch (_setupStatus) {
-  case SETUP_INIT:
-    _setupStatus = SETUP_ECHO;
-    sendCmd += "echo off\r";
-
-    sendStrWaitAck(
-        sendCmd,
-        std::bind(
-            &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
-    break;
   case SETUP_ECHO:
     if (result) {
-      _xiaomiSetupResult |= SETUP_ECHO;
-    }
-    _setupStatus = SETUP_MODEL;
+      _setupStatus = SETUP_MODEL;
+    } else {
+      sendCmd += "echo off\r";
 
-    sendCmd += "model ";
-    sendCmd += _model;
-    sendCmd += "\r";
-    sendStrWaitAck(
-        sendCmd,
-        std::bind(
-            &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
+      sendStrWaitAck(
+          sendCmd,
+          std::bind(
+              &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
+    }
     break;
   case SETUP_MODEL:
     if (result) {
-      _xiaomiSetupResult |= SETUP_MODEL;
+      _setupStatus = SETUP_BLE_PID;
+    } else {
+      sendCmd += "model ";
+      sendCmd += _model;
+      sendCmd += "\r";
+      sendStrWaitAck(
+          sendCmd,
+          std::bind(
+              &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
     }
-    _setupStatus = SETUP_BLE_PID;
-
-    sendCmd += "ble ";
-    sendCmd += _blePid;
-    sendCmd += "\r";
-    sendStrWaitAck(
-        sendCmd,
-        std::bind(
-            &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
     break;
   case SETUP_BLE_PID:
     if (result) {
-      _xiaomiSetupResult |= SETUP_BLE_PID;
-    }
-    _setupStatus = SETUP_MCU_VERSION;
+      _setupStatus = SETUP_MCU_VERSION;
 
-    sendCmd += "mcu_version ";
-    sendCmd += _mcuVersion;
-    sendCmd += "\r";
-    sendStrWaitAck(
-        sendCmd,
-        std::bind(
-            &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
+    } else {
+      sendCmd += "ble_config set ";
+      sendCmd += _blePid;
+      sendCmd += " ";
+      sendCmd += _mcuVersion;
+      sendCmd += "\r";
+      sendStrWaitAck(
+          sendCmd,
+          std::bind(
+              &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
+    }
     break;
   case SETUP_MCU_VERSION:
     if (result) {
-      _xiaomiSetupResult |= SETUP_MCU_VERSION;
-    }
-
-    if (_xiaomiSetupResult == SETUP_OK) {
       _setupStatus = SETUP_OK;
-      DEBUG_MIIO("[SerialMIIO]xiaomi setup success");
     } else {
-      _setupStatus = SETUP_INIT;
-      _xiaomiSetupResult = 0;
-      _handleXiaomiSetup(false);
-      DEBUG_MIIO("[SerialMIIO]xiaomi setup failed");
+      sendCmd += "mcu_version ";
+      sendCmd += _mcuVersion;
+      sendCmd += "\r";
+      sendStrWaitAck(
+          sendCmd,
+          std::bind(
+              &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
     }
     break;
   }
