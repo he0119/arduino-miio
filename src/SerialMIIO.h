@@ -41,24 +41,22 @@ extern "C" {
 #endif
 #endif
 
-/* ==================== callback function define ==================== */
-typedef std::function<void(const char *cmd, size_t length)> MethodCallback;
-typedef std::function<void(property_operation_t *o)> PropertyCallback;
-typedef std::function<void(action_operation_t *o)> ActionInvokeCallback;
-typedef std::function<void(String &cmd)> ReceiveCallback;
-typedef std::function<void(int result)> AckResultCallback;
-
-/* ==================== user define ==================== */
-enum SetupStatus {
-  SETUP_INIT = 0,
-  SETUP_ECHO = 1,
-  SETUP_MODEL = 2,
-  SETUP_BLE_PID = 4,
-  SETUP_MCU_VERSION = 8,
-  SETUP_OK = 15,
-};
-
 class SerialMIIO {
+  using MethodCallback = std::function<void(const char *cmd, size_t length)>;
+  using PropertyCallback = std::function<void(property_operation_t *o)>;
+  using ActionInvokeCallback = std::function<void(action_operation_t *o)>;
+  using ReceiveCallback = std::function<void(String &cmd)>;
+  using AckResultCallback = std::function<void(int result)>;
+
+  enum SetupStatus {
+    SETUP_INIT = 0,
+    SETUP_ECHO = 1,
+    SETUP_MODEL = 2,
+    SETUP_BLE_PID = 4,
+    SETUP_MCU_VERSION = 8,
+    SETUP_OK = 15,
+  };
+
 public:
   SerialMIIO(Stream &serial);
 
@@ -158,7 +156,8 @@ private:
 
   byte _xiaomiSetupResult = 0;
   SetupStatus _setupStatus = SETUP_INIT;
-  bool _getDownSend = false;
+  // 是否需要发送 get_down
+  bool _needGetDown = true;
 
   unsigned long _lastPoll = 0;
   unsigned long _pollIntervalMs = USER_POLL_INTERVAL_MS;
@@ -166,16 +165,18 @@ private:
   unsigned long _serialStartMillis = 0;
   unsigned long _serialTimeout = USER_UART_TIMEOUT_MS;
 
-  std::vector<AckResultCallback> _ackResultCallbacks;
-  std::vector<ReceiveCallback> _receiveCallbacks;
-  void _read();
-  void _executeReceiveCallbacks(String &cmd);
-  void _executeackResultCallbacks(bool result);
-
+  String _cmd;
   int _retry = 0;
   unsigned int _receiveRetry = USER_RECEIVE_RETRY;
 
-  String _cmd;
+  void _sendGetDown();
+  void _read();
+
+  void _executeReceiveCallbacks(String &cmd);
+  void _executeackResultCallbacks(bool result);
+
+  std::vector<AckResultCallback> _ackResultCallbacks;
+  std::vector<ReceiveCallback> _receiveCallbacks;
 
   std::map<String, MethodCallback> _methodCallbacks;
   std::map<std::pair<uint32_t, uint32_t>, PropertyCallback>
@@ -195,7 +196,7 @@ private:
   void _defaultMCUVersionCallback(const char *cmd, size_t length);
 
   void _handleXiaomiSetup(bool result);
-  void _handleGetDownSend(String &cmd);
+  void _handleGetDown(String &cmd);
   void _handleAck(String &cmd);
 };
 
