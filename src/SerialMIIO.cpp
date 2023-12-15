@@ -338,7 +338,6 @@ int SerialMIIO::executePropertyOperation(
       break;
     }
 
-    property_operation_encode_tail(result, CMD_BUF_SIZE);
     sendResponse(result);
   } while (false);
 
@@ -414,7 +413,6 @@ int SerialMIIO::executeActionInvocation(const char *cmd, size_t length) {
       break;
     }
 
-    action_operation_encode_tail(result, sizeof(result));
     sendResponse(result);
   } while (false);
 
@@ -574,9 +572,11 @@ void SerialMIIO::_defaultinvokeNoneCallback(const char *cmd, size_t length) {
 void SerialMIIO::_defaultMCUVersionCallback(const char *cmd, size_t length) {
   DEBUG_MIIO("[SerialMIIO]down mcu_version_req default callback");
 
-  char result[CMD_BUF_SIZE] = {0};
-  str_n_cat(result, 2, "mcu_version ", _mcuVersion);
-  action_operation_encode_tail(result, sizeof(result));
+  String result;
+  result.reserve(CMD_BUF_SIZE);
+  result += "mcu_version ";
+  result += _mcuVersion;
+
   sendResponse(result);
 }
 
