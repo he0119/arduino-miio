@@ -84,7 +84,7 @@ public:
   /**
    * @brief 设置轮询间隔时间。
    *
-   * @note 时间范围要求 100~200ms，推荐的循环周期为200ms，
+   * @note 时间范围要求 100~200ms，推荐的循环周期为 200ms，默认为 200ms。
    * https://iot.mi.com/v2/new/doc/embedded-dev/module-dev/function-dev/mcu-dev#命令规范
    * @param interval 轮询间隔时间，单位为毫秒。
    */
@@ -93,6 +93,7 @@ public:
   /**
    * @brief 设置接收重试次数
    *
+   * @note 默认为 25 次
    * @param retry 重试次数
    */
   void setReceiveRetry(unsigned int retry);
