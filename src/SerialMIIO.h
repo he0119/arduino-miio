@@ -173,8 +173,8 @@ private:
   void _executeReceiveCallbacks(String &cmd);
   void _executeackResultCallbacks(bool result);
 
-  std::vector<AckResultCallback> _ackResultCallbacks;
-  std::vector<ReceiveCallback> _receiveCallbacks;
+  AckResultCallback _ackResultCallback;
+  ReceiveCallback _receiveCallback;
 
   std::map<String, MethodCallback> _methodCallbacks;
   std::map<std::pair<uint32_t, uint32_t>, PropertyCallback>

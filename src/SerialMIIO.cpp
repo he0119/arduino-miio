@@ -93,7 +93,7 @@ void SerialMIIO::setReceiveRetry(unsigned int retry) {
 
 size_t SerialMIIO::sendStr(const char *str, ReceiveCallback callback) {
   DEBUG_MIIO("[SerialMIIO]send str and callback");
-  _receiveCallbacks.push_back(callback);
+  _receiveCallback = callback;
 
   int len = strlen(str);
   if (len <= 0) {
@@ -129,7 +129,7 @@ size_t SerialMIIO::sendStrWaitAck(const char *str) {
 }
 
 size_t SerialMIIO::sendStrWaitAck(const char *str, AckResultCallback callback) {
-  _ackResultCallbacks.push_back(callback);
+  _ackResultCallback = callback;
   return sendStrWaitAck(str);
 }
 
@@ -575,11 +575,14 @@ void SerialMIIO::loop() {
 void SerialMIIO::_sendGetDown() {
   // 没有初始化成功
   if (_setupStatus != SETUP_OK) {
-    if (millis() - _lastPoll > _pollIntervalMs &&
-        _receiveCallbacks.size() <= 0) {
+    if (millis() - _lastPoll > _pollIntervalMs && NULL == _receiveCallback) {
       _lastPoll = millis();
       _handleXiaomiSetup(false);
     }
+    return;
+  }
+  // 没有回调函数
+  if (NULL != _receiveCallback) {
     return;
   }
   // 需要发送 get_down
@@ -588,10 +591,6 @@ void SerialMIIO::_sendGetDown() {
   }
   // 没有达到轮询时间
   if (millis() - _lastPoll < _pollIntervalMs && _lastPoll != 0) {
-    return;
-  }
-  // 还有回调需要处理
-  if (_receiveCallbacks.size() > 0) {
     return;
   }
   // 以上情况均不发送 get_down
@@ -642,11 +641,11 @@ void SerialMIIO::_read() {
 void SerialMIIO::_executeReceiveCallbacks(String &cmd) {
   DEBUG_MIIO("[SerialMIIO]execute receive callbacks");
 
-  if (_receiveCallbacks.size() <= 0) {
+  if (NULL == _receiveCallback) {
     DEBUG_MIIO("[SerialMIIO]no receive callback");
   } else {
-    auto callback = _receiveCallbacks.back();
-    _receiveCallbacks.pop_back();
+    auto callback = _receiveCallback;
+    _receiveCallback = NULL;
     callback(cmd);
   }
 
@@ -658,14 +657,14 @@ void SerialMIIO::_executeReceiveCallbacks(String &cmd) {
 void SerialMIIO::_executeackResultCallbacks(bool result) {
   DEBUG_MIIO("[SerialMIIO]execute ack result callbacks");
 
-  if (_ackResultCallbacks.size() <= 0) {
+  if (NULL == _ackResultCallback) {
     DEBUG_MIIO("[SerialMIIO]no ack result callback");
-    return;
-  }
+  } else {
 
-  auto callback = _ackResultCallbacks.back();
-  _ackResultCallbacks.pop_back();
-  callback(result);
+    auto callback = _ackResultCallback;
+    _ackResultCallback = NULL;
+    callback(result);
+  }
 }
 
 void SerialMIIO::_handleXiaomiSetup(bool result) {
@@ -737,7 +736,6 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
 
 void SerialMIIO::_handleGetDown(String &cmd) {
   DEBUG_MIIO("[SerialMIIO]handle get down: %s", cmd);
-  _needGetDown = true;
 
   char method[CMD_BUF_SIZE] = {0};
   size_t methodLen = sizeof(method);
@@ -762,6 +760,7 @@ void SerialMIIO::_handleGetDown(String &cmd) {
   } else {
     DEBUG_MIIO("[SerialMIIO]unknown command: %s", _cmd);
   }
+  _needGetDown = true;
 }
 
 void SerialMIIO::_handleAck(String &cmd) {
