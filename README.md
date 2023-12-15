@@ -4,7 +4,7 @@
 
 ## 使用
 
-请参考 [示例](examples/Basic/Basic.ino)。
+请参考 [示例](examples/Basic/Basic.ino)，以小米个人开发者模板设备 `perdev.switch.004` 为例。
 
 ## 开发
 
