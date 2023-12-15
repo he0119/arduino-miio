@@ -51,8 +51,10 @@ enum uart_error_t {
 #define SPACE_CHAR ' '
 #define SPACE_STRING " "
 #define END_CHAR '\r'
+#define END_STRING "\r"
 #define ERROR_STRING "error"
 #define OK_STRING "ok"
+#define GET_DOWN_STRING "get_down"
 #define SET_PRO_STRING "set_properties"
 #define GET_PRO_STRING "get_properties"
 #define ACTION_STRING "action"

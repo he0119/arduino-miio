@@ -22,6 +22,6 @@
 #include "Arduino.h"
 
 int uart_comamnd_decoder(
-    char *pbuf, uint32_t buf_sz, char *method, uint32_t *method_len);
+    const char *pbuf, uint32_t buf_sz, char *method, uint32_t *method_len);
 
 #endif
