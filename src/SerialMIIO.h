@@ -114,21 +114,19 @@ public:
 
   PropertyCallback callbackFindByPropertySet(uint32_t siid, uint32_t piid);
 
-  size_t recvStr(char *buffer, size_t length);
+  size_t sendStr(const String &str, ReceiveCallback callback);
 
   size_t sendStr(const char *str, ReceiveCallback callback);
 
-  size_t sendStr(String str, ReceiveCallback callback);
+  size_t sendStrWaitAck(const String &str);
 
   size_t sendStrWaitAck(const char *str);
 
+  size_t sendStrWaitAck(const String &str, AckResultCallback callback);
+
   size_t sendStrWaitAck(const char *str, AckResultCallback callback);
 
-  size_t sendStrWaitAck(String str);
-
-  size_t sendStrWaitAck(String str, AckResultCallback callback);
-
-  int sendErrorCode(const char *msg, int errcode);
+  int sendResponse(const String &response);
 
   /**
    * @brief 发送回复
@@ -136,6 +134,10 @@ public:
    * @return 发送状态，0 为成功，其他为失败
    */
   int sendResponse(const char *response);
+
+  int sendErrorCode(const String &msg, int errcode);
+
+  int sendErrorCode(const char *msg, int errcode);
 
   int sendPropertyChanged(
       uint32_t siid, uint32_t piid, property_value_t *newValue);
@@ -149,6 +151,7 @@ public:
 
 private:
   Stream *_serial;
+
   String _model;
   String _blePid;
   String _mcuVersion;
