@@ -75,8 +75,6 @@ void SerialMIIO::begin(String model, String blePid, String mcuVersion) {
   _model = model;
   _blePid = blePid;
   _mcuVersion = mcuVersion;
-
-  _handleXiaomiSetup(false);
 }
 
 void SerialMIIO::setSerialTimeout(unsigned long timeout) {
