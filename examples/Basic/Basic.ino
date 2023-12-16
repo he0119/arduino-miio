@@ -14,9 +14,14 @@ enum Fault {
 Fault faultStatus = No_Faults;
 bool antiFlickerStatus = false;
 
+#define LED 2
+
 void setup() {
   Serial.begin(115200);
   Serial2.begin(115200);
+
+  pinMode(LED, OUTPUT);
+  digitalWrite(LED, onStatus);
 
   // 可通过以下函数设置运行参数
   miio.setPollInterval(200);
@@ -72,12 +77,13 @@ void P_2_1_On_doSet(property_operation_t *o) {
   }
 
   // 执行写操作: o->value->data.boolean.value;
+  onStatus = o->value->data.boolean.value;
+  digitalWrite(LED, onStatus);
 
   // 如果成功，返回代码: OPERATION_OK
   o->code = OPERATION_OK;
 
   // 上报状态
-  onStatus = o->value->data.boolean.value;
   statusUpdateFlag = 0x01;
 }
 
@@ -89,14 +95,13 @@ void P_2_4_AntiFlicker_doSet(property_operation_t *o) {
   }
 
   // TODO: 执行写操作: o->value->data.boolean.value;
+  antiFlickerStatus = o->value->data.boolean.value;
 
   // 如果成功，返回代码: OPERATION_OK
   o->code = OPERATION_OK;
 
   // 上报状态，通知app状态变化，统一APP修改、定时器触发后的上报机制
-  antiFlickerStatus = o->value->data.boolean.value;
   statusUpdateFlag = 0x10;
-  // P_2_4_AntiFlicker_doChange_notify(o->value->data.boolean.value);
 
   return;
 }
@@ -134,6 +139,7 @@ void A_2_1_Toggle_doInvoke(action_operation_t *o) {
 
   // 执行动作;
   onStatus = !onStatus;
+  digitalWrite(LED, onStatus);
   statusUpdateFlag = 0x01;
 
   // 如果成功，返回代码: OPERATION_OK
