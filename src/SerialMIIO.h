@@ -72,7 +72,7 @@ public:
 
   void begin(String model, String blePid, String mcuVersion);
 
-  void loop();
+  void handle();
 
   /**
    * @brief 设置串口超时时间
@@ -172,7 +172,7 @@ private:
   unsigned int _receiveRetry = USER_RECEIVE_RETRY;
 
   void _sendGetDown();
-  void _read();
+  void _recvStr();
 
   void _executeReceiveCallbacks(String &cmd);
   void _executeackResultCallbacks(bool result);

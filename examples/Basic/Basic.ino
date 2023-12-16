@@ -45,7 +45,7 @@ void setup() {
 }
 
 /**
- * 格式: property_value_new_boolean(true 或 false)　
+ * 格式: property_value_new_boolean(true 或 false)
  * 取值: true 或　false
  */
 void P_2_1_On_doGet(property_operation_t *o) {
@@ -54,7 +54,7 @@ void P_2_1_On_doGet(property_operation_t *o) {
 }
 
 /**
- * 格式: property_value_new_integer(整数)　
+ * 格式: property_value_new_integer(整数)
  * 取值: 0(No Faults), 1(Over Temperature), 2(Overload)
  */
 void P_2_3_Fault_doGet(property_operation_t *o) {
@@ -62,7 +62,7 @@ void P_2_3_Fault_doGet(property_operation_t *o) {
 }
 
 /**
- * 格式: property_value_new_boolean(true 或 false)　
+ * 格式: property_value_new_boolean(true 或 false)
  * 取值: true 或　false
  */
 void P_2_4_AntiFlicker_doGet(property_operation_t *o) {
@@ -158,5 +158,5 @@ void loop() {
   }
 
   // 串口数据处理循环
-  miio.loop();
+  miio.handle();
 }

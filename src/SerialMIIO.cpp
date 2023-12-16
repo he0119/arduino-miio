@@ -578,30 +578,28 @@ void SerialMIIO::_defaultMCUVersionCallback(const char *cmd, size_t length) {
   sendResponse(result);
 }
 
-void SerialMIIO::loop() {
+void SerialMIIO::handle() {
   _sendGetDown();
-  _read();
+  _recvStr();
 }
 
 void SerialMIIO::_sendGetDown() {
-  // 没有初始化成功
-  if (_setupStatus != SETUP_OK) {
-    if (millis() - _lastPoll > _pollIntervalMs && NULL == _receiveCallback) {
-      _lastPoll = millis();
-      _handleXiaomiSetup(false);
-    }
-    return;
-  }
   // 没有回调函数
   if (NULL != _receiveCallback) {
     return;
   }
-  // 需要发送 get_down
-  if (!_needGetDown) {
-    return;
-  }
   // 没有达到轮询时间
   if (millis() - _lastPoll < _pollIntervalMs && _lastPoll != 0) {
+    return;
+  }
+  // 没有初始化成功
+  if (_setupStatus != SETUP_OK) {
+    _lastPoll = millis();
+    _handleXiaomiSetup(false);
+    return;
+  }
+  // 需要发送 get_down
+  if (!_needGetDown) {
     return;
   }
   // 以上情况均不发送 get_down
@@ -614,7 +612,7 @@ void SerialMIIO::_sendGetDown() {
       std::bind(&SerialMIIO::_handleGetDown, this, std::placeholders::_1));
 }
 
-void SerialMIIO::_read() {
+void SerialMIIO::_recvStr() {
   // 超时时增加重试次数
   if (_serial->available() <= 0 &&
       millis() - _serialStartMillis > _serialTimeout) {
