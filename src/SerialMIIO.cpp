@@ -28,42 +28,21 @@ SerialMIIO::SerialMIIO(Stream &serial) {
   // 注册默认的回调函数
   // 用于处理 get_properties/set_properties/action/none/mcu_version_req
   // 可以被用户覆盖
-  onMethod(
-      GET_PRO_STRING,
-      std::bind(
-          &SerialMIIO::_defaultGetPropertiesCallback,
-          this,
-          std::placeholders::_1,
-          std::placeholders::_2));
-  onMethod(
-      SET_PRO_STRING,
-      std::bind(
-          &SerialMIIO::_defaultSetPropertyCallback,
-          this,
-          std::placeholders::_1,
-          std::placeholders::_2));
-  onMethod(
-      ACTION_STRING,
-      std::bind(
-          &SerialMIIO::_defaultinvokeActionCallback,
-          this,
-          std::placeholders::_1,
-          std::placeholders::_2));
-  onMethod(
-      NONE_STRING,
-      std::bind(
-          &SerialMIIO::_defaultinvokeNoneCallback,
-          this,
-          std::placeholders::_1,
-          std::placeholders::_2));
-
-  onMethod(
-      MCU_VERSION_REQ_STRING,
-      std::bind(
-          &SerialMIIO::_defaultMCUVersionCallback,
-          this,
-          std::placeholders::_1,
-          std::placeholders::_2));
+  onMethod(GET_PRO_STRING, [this](const char *cmd, size_t length) {
+    _defaultGetPropertiesCallback(cmd, length);
+  });
+  onMethod(SET_PRO_STRING, [this](const char *cmd, size_t length) {
+    _defaultSetPropertyCallback(cmd, length);
+  });
+  onMethod(ACTION_STRING, [this](const char *cmd, size_t length) {
+    _defaultinvokeActionCallback(cmd, length);
+  });
+  onMethod(NONE_STRING, [this](const char *cmd, size_t length) {
+    _defaultinvokeNoneCallback(cmd, length);
+  });
+  onMethod(MCU_VERSION_REQ_STRING, [this](const char *cmd, size_t length) {
+    _defaultMCUVersionCallback(cmd, length);
+  });
 }
 
 void SerialMIIO::begin(
@@ -123,8 +102,7 @@ size_t SerialMIIO::sendStrWaitAck(const String &str) {
     return UART_OK;
   }
 
-  size_t nSend = sendStr(
-      str, std::bind(&SerialMIIO::_handleAck, this, std::placeholders::_1));
+  size_t nSend = sendStr(str, [this](String &cmd) { _handleAck(cmd); });
 
   return nSend;
 }
@@ -607,9 +585,7 @@ void SerialMIIO::_sendGetDown() {
   _cmd.clear();
   _needGetDown = false;
 
-  sendStr(
-      GET_DOWN_STRING,
-      std::bind(&SerialMIIO::_handleGetDown, this, std::placeholders::_1));
+  sendStr(GET_DOWN_STRING, [this](String &cmd) { _handleGetDown(cmd); });
 }
 
 void SerialMIIO::_recvStr() {
@@ -693,9 +669,7 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
       sendCmd += "echo off";
 
       sendStrWaitAck(
-          sendCmd,
-          std::bind(
-              &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
+          sendCmd, [this](bool result) { _handleXiaomiSetup(result); });
     }
     break;
   case SETUP_MODEL:
@@ -705,9 +679,7 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
       sendCmd += "model ";
       sendCmd += _model;
       sendStrWaitAck(
-          sendCmd,
-          std::bind(
-              &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
+          sendCmd, [this](bool result) { _handleXiaomiSetup(result); });
     }
     break;
   case SETUP_BLE_PID:
@@ -720,9 +692,7 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
       sendCmd += " ";
       sendCmd += _mcuVersion;
       sendStrWaitAck(
-          sendCmd,
-          std::bind(
-              &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
+          sendCmd, [this](bool result) { _handleXiaomiSetup(result); });
     }
     break;
   case SETUP_MCU_VERSION:
@@ -732,9 +702,7 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
       sendCmd += "mcu_version ";
       sendCmd += _mcuVersion;
       sendStrWaitAck(
-          sendCmd,
-          std::bind(
-              &SerialMIIO::_handleXiaomiSetup, this, std::placeholders::_1));
+          sendCmd, [this](bool result) { _handleXiaomiSetup(result); });
     }
     break;
   }
