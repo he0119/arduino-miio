@@ -57,7 +57,7 @@ void SerialMIIO::begin(String model, String blePid, String mcuVersion) {
 }
 
 void SerialMIIO::setSerialTimeout(unsigned long timeout) {
-  _serialTimeout = timeout;
+  _serialTimeoutMs = timeout;
 }
 
 void SerialMIIO::setPollInterval(unsigned long interval) {
@@ -133,12 +133,12 @@ int SerialMIIO::sendResponse(const String &response) {
   int nSend = sendStrWaitAck(response);
 
   if (nSend < 0) {
-    DEBUG_MIIO("[SerialMIIO]uart send result failed");
+    DEBUG_MIIO("[SerialMIIO]serial send result failed");
     return MIIO_ERROR;
   }
 
   if (nSend < response.length()) {
-    DEBUG_MIIO("[SerialMIIO]uart send result incomplete");
+    DEBUG_MIIO("[SerialMIIO]serial send result incomplete");
     ret = MIIO_ERROR;
   }
   return ret;
@@ -567,23 +567,23 @@ void SerialMIIO::_sendGetDown() {
     return;
   }
   // 没有达到轮询时间
-  if (millis() - _lastPoll < _pollIntervalMs && _lastPoll != 0) {
+  if (millis() - _lastPollMillis < _pollIntervalMs && _lastPollMillis != 0) {
     return;
   }
   // 没有初始化成功
   if (_setupStatus != SETUP_OK) {
-    _lastPoll = millis();
+    _lastPollMillis = millis();
     _handleXiaomiSetup(false);
     return;
   }
-  // 需要发送 get_down
-  if (!_needGetDown) {
+  // 已经发送了 get_down
+  if (_getDownSent) {
     return;
   }
   // 以上情况均不发送 get_down
-  _lastPoll = millis();
+  _lastPollMillis = millis();
   _cmd.clear();
-  _needGetDown = false;
+  _getDownSent = true;
 
   sendStr(GET_DOWN_STRING, [this](String &cmd) { _handleGetDown(cmd); });
 }
@@ -591,8 +591,8 @@ void SerialMIIO::_sendGetDown() {
 void SerialMIIO::_recvStr() {
   // 超时时增加重试次数
   if (_serial->available() <= 0 &&
-      millis() - _serialStartMillis > _serialTimeout) {
-    // DEBUG_MIIO("[SerialMIIO]read timeout");
+      millis() - _serialStartMillis > _serialTimeoutMs) {
+    DEBUG_MIIO("[SerialMIIO]receive timeout");
     _retry++;
     _serialStartMillis = millis();
     return;
@@ -603,28 +603,32 @@ void SerialMIIO::_recvStr() {
     _serialStartMillis = millis();
 
     if (_cmd.length() > CMD_BUF_SIZE) {
-      DEBUG_MIIO("[SerialMIIO]cmd too long %d retry=%d", _cmd.length(), _retry);
-      _cmd.clear();
-      _retry = 0;
+      DEBUG_MIIO("[SerialMIIO]receive cmd too long %d bytes", _cmd.length());
+      _clearReceiveBuffer();
       continue;
     }
 
     if (_cmd.endsWith(END_STRING)) {
-      DEBUG_MIIO("[SerialMIIO]cmd end");
-      _executeReceiveCallbacks(_cmd);
+      DEBUG_MIIO("[SerialMIIO]receive cmd end");
+      _executeReceiveCallback(_cmd);
       return;
     }
   }
 
   if (_retry > _receiveRetry) {
-    DEBUG_MIIO("[SerialMIIO]read retry too many times");
-    _executeReceiveCallbacks(_cmd);
+    DEBUG_MIIO("[SerialMIIO]receive retry too many times");
+    _executeReceiveCallback(_cmd);
     return;
   }
 }
 
-void SerialMIIO::_executeReceiveCallbacks(String &cmd) {
-  DEBUG_MIIO("[SerialMIIO]execute receive callbacks");
+void SerialMIIO::_clearReceiveBuffer() {
+  _cmd.clear();
+  _retry = 0;
+}
+
+void SerialMIIO::_executeReceiveCallback(String &cmd) {
+  DEBUG_MIIO("[SerialMIIO]execute receive callback");
 
   if (NULL == _receiveCallback) {
     DEBUG_MIIO("[SerialMIIO]no receive callback");
@@ -635,17 +639,15 @@ void SerialMIIO::_executeReceiveCallbacks(String &cmd) {
   }
 
   // 无论什么时候，执行完回调后，都清空缓存
-  _cmd.clear();
-  _retry = 0;
+  _clearReceiveBuffer();
 }
 
-void SerialMIIO::_executeackResultCallbacks(bool result) {
-  DEBUG_MIIO("[SerialMIIO]execute ack result callbacks");
+void SerialMIIO::_executeackResultCallback(bool result) {
+  DEBUG_MIIO("[SerialMIIO]execute ack result callback");
 
   if (NULL == _ackResultCallback) {
     DEBUG_MIIO("[SerialMIIO]no ack result callback");
   } else {
-
     auto callback = _ackResultCallback;
     _ackResultCallback = NULL;
     callback(result);
@@ -710,7 +712,7 @@ void SerialMIIO::_handleXiaomiSetup(bool result) {
 
 void SerialMIIO::_handleGetDown(String &cmd) {
   DEBUG_MIIO("[SerialMIIO]handle get down: %s", cmd.c_str());
-  _needGetDown = true;
+  _getDownSent = false;
 
   char method[CMD_BUF_SIZE] = {0};
   size_t methodLen = sizeof(method);
@@ -745,5 +747,5 @@ void SerialMIIO::_handleAck(String &cmd) {
     DEBUG_MIIO("[SerialMIIO]send string wait ack failed");
   }
 
-  _executeackResultCallbacks(isOk);
+  _executeackResultCallback(isOk);
 }

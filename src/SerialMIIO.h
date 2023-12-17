@@ -158,24 +158,25 @@ private:
   String _mcuVersion;
 
   SetupStatus _setupStatus = SETUP_ECHO;
-  // 是否需要发送 get_down
-  bool _needGetDown = true;
+  // 是否发送了 get_down
+  bool _getDownSent = false;
 
-  unsigned long _lastPoll = 0;
+  unsigned long _lastPollMillis = 0;
   unsigned long _pollIntervalMs = USER_POLL_INTERVAL_MS;
 
   unsigned long _serialStartMillis = 0;
-  unsigned long _serialTimeout = USER_UART_TIMEOUT_MS;
+  unsigned long _serialTimeoutMs = USER_UART_TIMEOUT_MS;
 
   String _cmd;
   int _retry = 0;
   unsigned int _receiveRetry = USER_RECEIVE_RETRY;
+  void _clearReceiveBuffer();
 
   void _sendGetDown();
   void _recvStr();
 
-  void _executeReceiveCallbacks(String &cmd);
-  void _executeackResultCallbacks(bool result);
+  void _executeReceiveCallback(String &cmd);
+  void _executeackResultCallback(bool result);
 
   AckResultCallback _ackResultCallback;
   ReceiveCallback _receiveCallback;
