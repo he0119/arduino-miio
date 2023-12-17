@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/lang/zh-CN/
 
 ## [Unreleased]
 
+## 0.0.6 - 2023-12-17
+
 ### Changed
 
 - 使用回调函数优化代码
