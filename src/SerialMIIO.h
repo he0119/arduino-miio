@@ -116,8 +116,8 @@ public:
   /**
    * @brief 设置日志等级
    *
-   * @note 默认为 25 次
-   * @param count 最大重试次数
+   * @note 0 对应 debug, 5 对应不输出日志
+   * @param level 日志等级
    */
   void setLogLevel(uint8_t level);
 
