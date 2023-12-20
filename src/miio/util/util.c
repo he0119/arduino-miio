@@ -18,8 +18,6 @@
  *    limitations under the License.
  */
 
-#include "Arduino.h"
-
 #include "miio/util/util.h"
 
 void str_n_cat(char *pDst, int n_str, ...) {

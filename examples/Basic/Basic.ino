@@ -1,12 +1,16 @@
 /* perdev.switch.004 */
 
+#include <Arduino.h>
+#include <SerialMIIO.h>
+
+#define LED_PIN 2
+
 #ifdef ESP32
 #define MIIOSerial Serial2
 #else
-#define MIIOSerial Serial1
+#define MIIOSerial Serial
 #endif
 
-#include <SerialMIIO.h>
 SerialMIIO miio(MIIOSerial);
 
 int statusUpdateFlag;
@@ -20,23 +24,30 @@ enum Fault {
 Fault faultStatus = No_Faults;
 bool antiFlickerStatus = false;
 
-#define LED 2
+void P_2_1_On_doGet(property_operation_t *o);
+void P_2_3_Fault_doGet(property_operation_t *o);
+void P_2_4_AntiFlicker_doGet(property_operation_t *o);
+void P_2_1_On_doSet(property_operation_t *o);
+void P_2_4_AntiFlicker_doSet(property_operation_t *o);
+void P_2_1_On_doChange(bool newValue);
+void P_2_3_Fault_doChange(Fault newValue);
+void P_2_4_AntiFlicker_doChange(bool newValue);
+void A_2_1_Toggle_doInvoke(action_operation_t *o);
 
 void setup() {
   Serial.begin(115200);
   MIIOSerial.begin(115200);
 
-  pinMode(LED, OUTPUT);
-  digitalWrite(LED, onStatus);
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, onStatus);
 
   // 可通过以下函数设置运行参数
+  miio.setTimeout(200);
+  miio.setMaxRetry(25);
   miio.setPollInterval(200);
-  miio.setSerialTimeout(200);
-  miio.setReceiveRetry(25);
 
   // log_level 范围为 0 ~ 5, 0 表示开启 debug 日志，5 表示关闭日志打印。
-  // TODO: 以后可以提供一个函数来配置日志级别
-  miio.sendStrWaitAck("set_log_level 0");
+  miio.setLogLevel(0);
 
   // 设置设备的基本配置
   miio.begin("perdev.switch.004", "18031", "0001");
@@ -48,6 +59,21 @@ void setup() {
   miio.onPropertySet(2, 1, P_2_1_On_doSet);
   miio.onPropertySet(2, 4, P_2_4_AntiFlicker_doSet);
   miio.onActionInvoke(2, 1, A_2_1_Toggle_doInvoke);
+}
+
+void loop() {
+  // 状态改变主动上报
+  if ((statusUpdateFlag & 0x0F) == 0x01) {
+    P_2_1_On_doChange(onStatus);
+    statusUpdateFlag = statusUpdateFlag & 0xF0;
+  }
+  if ((statusUpdateFlag & 0xF0) == 0x10) {
+    P_2_4_AntiFlicker_doChange(antiFlickerStatus);
+    statusUpdateFlag = statusUpdateFlag & 0x0F;
+  }
+
+  // 串口数据处理循环
+  miio.handle();
 }
 
 /**
@@ -84,7 +110,7 @@ void P_2_1_On_doSet(property_operation_t *o) {
 
   // 执行写操作: o->value->data.boolean.value;
   onStatus = o->value->data.boolean.value;
-  digitalWrite(LED, onStatus);
+  digitalWrite(LED_PIN, onStatus);
 
   // 如果成功，返回代码: OPERATION_OK
   o->code = OPERATION_OK;
@@ -145,24 +171,9 @@ void A_2_1_Toggle_doInvoke(action_operation_t *o) {
 
   // 执行动作;
   onStatus = !onStatus;
-  digitalWrite(LED, onStatus);
+  digitalWrite(LED_PIN, onStatus);
   statusUpdateFlag = 0x01;
 
   // 如果成功，返回代码: OPERATION_OK
   o->code = OPERATION_OK;
-}
-
-void loop() {
-  // 状态改变主动上报
-  if ((statusUpdateFlag & 0x0F) == 0x01) {
-    P_2_1_On_doChange(onStatus);
-    statusUpdateFlag = statusUpdateFlag & 0xF0;
-  }
-  if ((statusUpdateFlag & 0xF0) == 0x10) {
-    P_2_4_AntiFlicker_doChange(antiFlickerStatus);
-    statusUpdateFlag = statusUpdateFlag & 0x0F;
-  }
-
-  // 串口数据处理循环
-  miio.handle();
 }

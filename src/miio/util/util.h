@@ -21,7 +21,8 @@
 #ifndef __UTIL_H__
 #define __UTIL_H__
 
-#include "Arduino.h"
+#include <stdarg.h>
+#include <stddef.h>
 
 void str_n_cat(char *pDst, int n_str, ...);
 
