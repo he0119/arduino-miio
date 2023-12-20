@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/lang/zh-CN/
 
 ## [Unreleased]
 
+### Fixed
+
+- 修复 ESP8266 无法编译的问题
+
 ## 0.0.6 - 2023-12-17
 
 ### Changed

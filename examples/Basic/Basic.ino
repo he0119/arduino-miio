@@ -1,7 +1,13 @@
 /* perdev.switch.004 */
 
+#ifdef ESP32
+#define MIIOSerial Serial2
+#else
+#define MIIOSerial Serial1
+#endif
+
 #include <SerialMIIO.h>
-SerialMIIO miio(Serial2);
+SerialMIIO miio(MIIOSerial);
 
 int statusUpdateFlag;
 
@@ -18,7 +24,7 @@ bool antiFlickerStatus = false;
 
 void setup() {
   Serial.begin(115200);
-  Serial2.begin(115200);
+  MIIOSerial.begin(115200);
 
   pinMode(LED, OUTPUT);
   digitalWrite(LED, onStatus);
