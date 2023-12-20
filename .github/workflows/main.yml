@@ -10,6 +10,16 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - additional_urls: https://arduino.esp8266.com/stable/package_esp8266com_index.json
+            arduino-board: "esp8266:esp8266@3.1.2"
+            arduino-platform: "esp8266:esp8266:nodemcuv2"
+          - additional_urls: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+            arduino-board: "esp32:esp32@2.0.14"
+            arduino-platform: "esp32:esp32:esp32"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,8 +28,18 @@ jobs:
       - name: Install Dependencies
         run: |
           arduino-cli config init
-          arduino-cli config set board_manager.additional_urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          arduino-cli config set board_manager.additional_urls ${{ matrix.additional_urls }}
           arduino-cli core update-index
-          arduino-cli core install esp32:esp32
+          arduino-cli core install ${{ matrix.arduino-board }}
       - name: Compile sketch
-        run: arduino-cli compile --library . --fqbn esp32:esp32:esp32 ./examples/Basic/Basic.ino
+        run: arduino-cli compile --library . --fqbn ${{ matrix.arduino-platform }} ./examples/Basic/Basic.ino
+
+  check:
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe
+        with:
+          jobs: ${{ toJSON(needs) }}
