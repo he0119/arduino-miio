@@ -1,10 +1,20 @@
 #ifndef _SerialMIIO_H_
 #define _SerialMIIO_H_
 
+#if (                                                                          \
+    defined(__AVR__) || ((defined(ARDUINO_UNOR4_WIFI) || defined(ESP8266)) &&  \
+                         !defined(NO_SW_SERIAL)))
+#define USE_SW_SERIAL
+#endif
+
+#include <Arduino.h>
+
+#ifdef USE_SW_SERIAL
+#include <SoftwareSerial.h>
+#endif
+
 #include <map>
 #include <vector>
-
-#include "Arduino.h"
 
 extern "C" {
 #include "miio/device/codec/action_operation_decoder.h"
@@ -42,7 +52,7 @@ extern "C" {
 #endif
 
 class SerialMIIO {
-  using MethodCallback = std::function<void(const char *cmd, size_t length)>;
+  using MethodCallback = std::function<void(const char *cmd, uint32_t length)>;
   using PropertyCallback = std::function<void(property_operation_t *o)>;
   using ActionInvokeCallback = std::function<void(action_operation_t *o)>;
   using ReceiveCallback = std::function<void(String &cmd)>;
@@ -57,7 +67,11 @@ class SerialMIIO {
   };
 
 public:
-  SerialMIIO(Stream &serial);
+  SerialMIIO(Stream &stream);
+  SerialMIIO(HardwareSerial &serial);
+#ifdef USE_SW_SERIAL
+  SerialMIIO(SoftwareSerial &serial);
+#endif
 
   /**
    * @brief 小米模组基本设置
@@ -69,8 +83,9 @@ public:
    * @param mcuVersion MCU 固件版本（必须是 4 位数字）
    */
   void begin(const char *model, const char *blePid, const char *mcuVersion);
-
   void begin(String model, String blePid, String mcuVersion);
+
+  void common_init(void);
 
   void handle();
 
@@ -79,7 +94,7 @@ public:
    * @note 默认为 200 毫秒
    * @param timeout 超时时间（毫秒）
    */
-  void setSerialTimeout(unsigned long timeout);
+  void setTimeout(uint32_t timeout);
 
   /**
    * @brief 设置轮询间隔时间。
@@ -88,70 +103,63 @@ public:
    * https://iot.mi.com/v2/new/doc/embedded-dev/module-dev/function-dev/mcu-dev#命令规范
    * @param interval 轮询间隔时间，单位为毫秒。
    */
-  void setPollInterval(unsigned long interval);
+  void setPollInterval(uint32_t interval);
 
   /**
-   * @brief 设置接收重试次数
+   * @brief 设置最大接收重试次数
    *
    * @note 默认为 25 次
-   * @param retry 重试次数
+   * @param count 最大重试次数
    */
-  void setReceiveRetry(unsigned int retry);
+  void setMaxRetry(uint32_t count);
+
+  /**
+   * @brief 设置日志等级
+   *
+   * @note 默认为 25 次
+   * @param count 最大重试次数
+   */
+  void setLogLevel(uint8_t level);
 
   void onMethod(String method, MethodCallback callback);
-
   void
   onActionInvoke(uint32_t siid, uint32_t aiid, ActionInvokeCallback callback);
-
   void onPropertyGet(uint32_t siid, uint32_t piid, PropertyCallback callback);
-
   void onPropertySet(uint32_t siid, uint32_t piid, PropertyCallback callback);
 
   MethodCallback callbackFindByMethod(const char *method);
-
   ActionInvokeCallback callbackFindByAction(uint32_t siid, uint32_t aiid);
-
   PropertyCallback callbackFindByPropertyGet(uint32_t siid, uint32_t piid);
-
   PropertyCallback callbackFindByPropertySet(uint32_t siid, uint32_t piid);
 
-  size_t sendStr(const String &str, ReceiveCallback callback);
-
-  size_t sendStr(const char *str, ReceiveCallback callback);
-
-  size_t sendStrWaitAck(const String &str);
-
-  size_t sendStrWaitAck(const char *str);
-
-  size_t sendStrWaitAck(const String &str, AckResultCallback callback);
-
-  size_t sendStrWaitAck(const char *str, AckResultCallback callback);
-
-  int sendResponse(const String &response);
+  int32_t sendStr(const String &str, ReceiveCallback callback);
+  int32_t sendStr(const char *str, ReceiveCallback callback);
+  int32_t sendStrWaitAck(const String &str);
+  int32_t sendStrWaitAck(const char *str);
+  int32_t sendStrWaitAck(const String &str, AckResultCallback callback);
+  int32_t sendStrWaitAck(const char *str, AckResultCallback callback);
 
   /**
    * @brief 发送回复
    * @param response 回复内容
    * @return 发送状态，0 为成功，其他为失败
    */
-  int sendResponse(const char *response);
+  int32_t sendResponse(const char *response);
+  int32_t sendResponse(const String &response);
 
-  int sendErrorCode(const String &msg, int errcode);
+  int32_t sendErrorCode(const char *msg, int32_t errcode);
+  int32_t sendErrorCode(const String &msg, int32_t errcode);
 
-  int sendErrorCode(const char *msg, int errcode);
+  int32_t
+  sendPropertyChanged(uint32_t siid, uint32_t piid, property_value_t *newValue);
+  int32_t sendEventOccurred(event_operation_t *event);
 
-  int sendPropertyChanged(
-      uint32_t siid, uint32_t piid, property_value_t *newValue);
-
-  int sendEventOccurred(event_operation_t *event);
-
-  int executePropertyOperation(
-      const char *cmd, size_t length, property_operation_type type);
-
-  int executeActionInvocation(const char *cmd, size_t length);
+  int32_t executePropertyOperation(
+      const char *cmd, uint32_t length, property_operation_type type);
+  int32_t executeActionInvocation(const char *cmd, uint32_t length);
 
 private:
-  Stream *_serial;
+  Stream *_stream;
 
   String _model;
   String _blePid;
@@ -161,15 +169,15 @@ private:
   // 是否发送了 get_down
   bool _getDownSent = false;
 
-  unsigned long _lastPollMillis = 0;
-  unsigned long _pollIntervalMs = USER_POLL_INTERVAL_MS;
+  uint32_t _lastPollMillis = 0;
+  uint32_t _pollIntervalMs = USER_POLL_INTERVAL_MS;
 
-  unsigned long _serialStartMillis = 0;
-  unsigned long _serialTimeoutMs = USER_UART_TIMEOUT_MS;
+  uint32_t _startMillis = 0;
+  uint32_t _timeoutMs = USER_UART_TIMEOUT_MS;
 
   String _cmd;
-  int _retry = 0;
-  unsigned int _receiveRetry = USER_RECEIVE_RETRY;
+  uint16_t _retry = 0;
+  uint16_t _maxRetry = USER_RECEIVE_RETRY;
   void _clearReceiveBuffer();
 
   void _sendGetDown();
@@ -192,11 +200,11 @@ private:
   void _onPropertyGet(property_operation_t *o);
   void _onPropertySet(property_operation_t *o);
   void _onActionInvoke(action_operation_t *o);
-  void _defaultGetPropertiesCallback(const char *cmd, size_t length);
-  void _defaultSetPropertyCallback(const char *cmd, size_t length);
-  void _defaultinvokeActionCallback(const char *cmd, size_t length);
-  void _defaultinvokeNoneCallback(const char *cmd, size_t length);
-  void _defaultMCUVersionCallback(const char *cmd, size_t length);
+  void _defaultGetPropertiesCallback(const char *cmd, uint32_t length);
+  void _defaultSetPropertyCallback(const char *cmd, uint32_t length);
+  void _defaultinvokeActionCallback(const char *cmd, uint32_t length);
+  void _defaultinvokeNoneCallback(const char *cmd, uint32_t length);
+  void _defaultMCUVersionCallback(const char *cmd, uint32_t length);
 
   void _handleXiaomiSetup(bool result);
   void _handleGetDown(String &cmd);
