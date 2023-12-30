@@ -85,7 +85,7 @@ public:
   void begin(const char *model, const char *blePid, const char *mcuVersion);
   void begin(String model, String blePid, String mcuVersion);
 
-  void common_init(void);
+  void commonInit(void);
 
   void handle();
 
@@ -175,7 +175,8 @@ private:
   uint32_t _startMillis = 0;
   uint32_t _timeoutMs = USER_UART_TIMEOUT_MS;
 
-  String _cmd;
+  String _sendBuffer;
+  String _recvBuffer;
   uint16_t _retry = 0;
   uint16_t _maxRetry = USER_RECEIVE_RETRY;
   void _clearReceiveBuffer();

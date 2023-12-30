@@ -22,13 +22,13 @@
 
 SerialMIIO::SerialMIIO(Stream &stream) {
   _stream = &stream;
-  common_init();
+  commonInit();
 }
 
 SerialMIIO::SerialMIIO(HardwareSerial &serial) {
   serial.begin(115200);
   _stream = &serial;
-  common_init();
+  commonInit();
 }
 
 #ifdef USE_SW_SERIAL
@@ -39,8 +39,8 @@ SerialMIIO::SerialMIIO(SoftwareSerial &serial) {
 }
 #endif
 
-void SerialMIIO::common_init() {
-  _cmd.reserve(CMD_BUF_SIZE);
+void SerialMIIO::commonInit() {
+  _sendBuffer.reserve(CMD_BUF_SIZE);
 
   // 注册默认的回调函数
   // 用于处理 get_properties/set_properties/action/none/mcu_version_req
@@ -610,7 +610,7 @@ void SerialMIIO::_sendGetDown() {
   }
   // 以上情况均不发送 get_down
   _lastPollMillis = millis();
-  _cmd = String();
+  _sendBuffer = String();
   _getDownSent = true;
 
   sendStr(GET_DOWN_STRING, [this](String &cmd) { _handleGetDown(cmd); });
@@ -626,31 +626,32 @@ void SerialMIIO::_recvStr() {
   }
 
   while (_stream->available() > 0) {
-    _cmd += (char)_stream->read();
+    _recvBuffer += (char)_stream->read();
     _startMillis = millis();
 
-    if (_cmd.length() > CMD_BUF_SIZE) {
-      DEBUG_MIIO("[SerialMIIO]receive cmd too long %d bytes", _cmd.length());
+    if (_recvBuffer.length() > CMD_BUF_SIZE) {
+      DEBUG_MIIO(
+          "[SerialMIIO]receive cmd too long %d bytes", _recvBuffer.length());
       _clearReceiveBuffer();
       continue;
     }
 
-    if (_cmd.endsWith(END_STRING)) {
+    if (_recvBuffer.endsWith(END_STRING)) {
       DEBUG_MIIO("[SerialMIIO]receive cmd end");
-      _executeReceiveCallback(_cmd);
+      _executeReceiveCallback(_recvBuffer);
       return;
     }
   }
 
   if (_retry > _maxRetry) {
     DEBUG_MIIO("[SerialMIIO]receive retry too many times");
-    _executeReceiveCallback(_cmd);
+    _executeReceiveCallback(_recvBuffer);
     return;
   }
 }
 
 void SerialMIIO::_clearReceiveBuffer() {
-  _cmd = String();
+  _recvBuffer = String();
   _retry = 0;
 }
 
@@ -745,8 +746,8 @@ void SerialMIIO::_handleGetDown(String &cmd) {
 
   char method[CMD_BUF_SIZE] = {0};
   uint32_t methodLen = sizeof(method);
-  int ret =
-      uart_comamnd_decoder(_cmd.c_str(), cmd.length(), method, &methodLen);
+  int ret = uart_comamnd_decoder(
+      _recvBuffer.c_str(), cmd.length(), method, &methodLen);
   if (MIIO_OK != ret) { /* judge if string decoded correctly */
     DEBUG_MIIO("[SerialMIIO]get method failed");
     return;
@@ -761,7 +762,7 @@ void SerialMIIO::_handleGetDown(String &cmd) {
       }
     } else {
       DEBUG_MIIO("[SerialMIIO]found method: %s", method);
-      callback(_cmd.c_str(), cmd.length());
+      callback(_recvBuffer.c_str(), cmd.length());
     }
   } else {
     DEBUG_MIIO("[SerialMIIO]unknown method: %s", method);
