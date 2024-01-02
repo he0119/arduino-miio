@@ -35,7 +35,7 @@ SerialMIIO::SerialMIIO(HardwareSerial &serial) {
 SerialMIIO::SerialMIIO(SoftwareSerial &serial) {
   serial.begin(115200);
   _stream = &serial;
-  common_init();
+  commonInit();
 }
 #endif
 
