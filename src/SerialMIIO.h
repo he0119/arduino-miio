@@ -34,12 +34,12 @@ extern "C" {
 
 /* ==================== debug define ==================== */
 #ifndef NODEBUG_MIIO
-#ifdef DEBUG_ESP_PORT
+#ifdef DEBUG_SERIAL
 #define DEBUG_MIIO(...)                                                        \
   {                                                                            \
-    DEBUG_ESP_PORT.printf(__VA_ARGS__);                                        \
-    DEBUG_ESP_PORT.println();                                                  \
-    DEBUG_ESP_PORT.flush();                                                    \
+    DEBUG_SERIAL.printf(__VA_ARGS__);                                          \
+    DEBUG_SERIAL.println();                                                    \
+    DEBUG_SERIAL.flush();                                                      \
   }
 #endif
 #endif
@@ -56,7 +56,7 @@ class SerialMIIO {
   using PropertyCallback = std::function<void(property_operation_t *o)>;
   using ActionInvokeCallback = std::function<void(action_operation_t *o)>;
   using ReceiveCallback = std::function<void(String &cmd)>;
-  using AckResultCallback = std::function<void(int result)>;
+  using AckCallback = std::function<void(int result)>;
 
   enum SetupStatus {
     SETUP_ECHO,
@@ -64,6 +64,15 @@ class SerialMIIO {
     SETUP_BLE_PID,
     SETUP_MCU_VERSION,
     SETUP_OK,
+  };
+
+  enum State {
+    STATE_SETUP,         // 初始化状态
+    STATE_IDLE,          // 空闲状态
+    STATE_WAIT_GET_DOWN, // 等待 get_down 结果
+    STATE_WAIT_ACK,      // 等待回复确认
+    STATE_WAIT_REPLY,    // 等待回复上报结果
+    STATE_WAIT_RESULT,   // 等待回复查询结果
   };
 
 public:
@@ -132,20 +141,15 @@ public:
   PropertyCallback callbackFindByPropertyGet(uint32_t siid, uint32_t piid);
   PropertyCallback callbackFindByPropertySet(uint32_t siid, uint32_t piid);
 
-  int32_t sendStr(const String &str, ReceiveCallback callback);
-  int32_t sendStr(const char *str, ReceiveCallback callback);
-  int32_t sendStrWaitAck(const String &str);
-  int32_t sendStrWaitAck(const char *str);
-  int32_t sendStrWaitAck(const String &str, AckResultCallback callback);
-  int32_t sendStrWaitAck(const char *str, AckResultCallback callback);
+  int32_t send(ReceiveCallback callback);
+  int32_t sendWaitAck();
+  int32_t sendWaitAck(AckCallback callback);
 
   /**
-   * @brief 发送回复
-   * @param response 回复内容
+   * @brief 发送缓冲区内容回复
    * @return 发送状态，0 为成功，其他为失败
    */
-  int32_t sendResponse(const char *response);
-  int32_t sendResponse(const String &response);
+  int32_t sendResponse();
 
   int32_t sendErrorCode(const char *msg, int32_t errcode);
   int32_t sendErrorCode(const String &msg, int32_t errcode);
@@ -161,13 +165,13 @@ public:
 private:
   Stream *_stream;
 
+  State _state;
+
   String _model;
   String _blePid;
   String _mcuVersion;
 
   SetupStatus _setupStatus = SETUP_ECHO;
-  // 是否发送了 get_down
-  bool _getDownSent = false;
 
   uint32_t _lastPollMillis = 0;
   uint32_t _pollIntervalMs = USER_POLL_INTERVAL_MS;
@@ -179,16 +183,16 @@ private:
   String _recvBuffer;
   uint16_t _retry = 0;
   uint16_t _maxRetry = USER_RECEIVE_RETRY;
-  void _clearReceiveBuffer();
+  void _clearRecvBuffer();
 
   void _sendGetDown();
-  void _recvStr();
+  bool _recvStr();
 
   void _executeReceiveCallback(String &cmd);
-  void _executeackResultCallback(bool result);
+  void _executeAckCallback(bool result);
 
-  AckResultCallback _ackResultCallback;
-  ReceiveCallback _receiveCallback;
+  AckCallback _ackCallback;
+  ReceiveCallback _recvCallback;
 
   std::map<String, MethodCallback> _methodCallbacks;
   std::map<std::pair<uint32_t, uint32_t>, PropertyCallback>
@@ -204,10 +208,10 @@ private:
   void _defaultGetPropertiesCallback(const char *cmd, uint32_t length);
   void _defaultSetPropertyCallback(const char *cmd, uint32_t length);
   void _defaultinvokeActionCallback(const char *cmd, uint32_t length);
-  void _defaultinvokeNoneCallback(const char *cmd, uint32_t length);
+  void _defaultInvokeNoneCallback(const char *cmd, uint32_t length);
   void _defaultMCUVersionCallback(const char *cmd, uint32_t length);
 
-  void _handleXiaomiSetup(bool result);
+  void _handleSetup(bool result);
   void _handleGetDown(String &cmd);
   void _handleAck(String &cmd);
 };
