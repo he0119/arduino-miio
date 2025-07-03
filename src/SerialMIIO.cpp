@@ -807,6 +807,7 @@ void SerialMIIO::_handleGetDown(String &cmd) {
       _recvBuffer.c_str(), cmd.length(), method, &methodLen);
   if (MIIO_OK != ret) { /* judge if string decoded correctly */
     DEBUG_MIIO("[SerialMIIO]get method failed");
+    _state = STATE_IDLE;
     return;
   }
 
@@ -826,6 +827,7 @@ void SerialMIIO::_handleGetDown(String &cmd) {
   } else {
     DEBUG_MIIO("[SerialMIIO]unknown method: ");
     DEBUG_MIIO(method);
+    _state = STATE_IDLE;
   }
 }
 
