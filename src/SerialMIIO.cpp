@@ -63,6 +63,9 @@ void SerialMIIO::commonInit() {
   onMethod(MCU_VERSION_REQ_STRING, [this](const char *cmd, uint32_t length) {
     _defaultMCUVersionCallback(cmd, length);
   });
+  onMethod(NET_CHANGE_STRING, [this](const char *cmd, uint32_t length) {
+    _defaultNetChangeCallback(cmd, length);
+  });
 }
 
 void SerialMIIO::begin(
@@ -572,6 +575,11 @@ void SerialMIIO::_defaultMCUVersionCallback(const char *cmd, uint32_t length) {
   _sendBuffer = "mcu_version ";
   _sendBuffer += _mcuVersion;
   sendResponse();
+}
+
+void SerialMIIO::_defaultNetChangeCallback(const char *cmd, uint32_t length) {
+  DEBUG_MIIO("[SerialMIIO]down net_change default callback");
+  _state = STATE_IDLE;
 }
 
 void SerialMIIO::handle() {

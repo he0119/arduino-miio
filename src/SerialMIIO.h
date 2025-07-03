@@ -214,6 +214,7 @@ private:
   void _defaultinvokeActionCallback(const char *cmd, uint32_t length);
   void _defaultInvokeNoneCallback(const char *cmd, uint32_t length);
   void _defaultMCUVersionCallback(const char *cmd, uint32_t length);
+  void _defaultNetChangeCallback(const char *cmd, uint32_t length);
 
   void _handleSetup(bool result);
   void _handleGetDown(String &cmd);
