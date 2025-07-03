@@ -67,7 +67,10 @@ class SerialMIIO {
   };
 
   enum State {
-    STATE_SETUP,         // 初始化状态
+    // 配置阶段
+    STATE_SETUP,          // 初始化状态
+    STATE_SETUP_WAIT_ACK, // 等待初始化命令回复上报结果
+    // 工作阶段
     STATE_IDLE,          // 空闲状态
     STATE_WAIT_GET_DOWN, // 等待 get_down 结果
     STATE_WAIT_ACK,      // 等待回复确认
@@ -186,7 +189,7 @@ private:
   void _clearRecvBuffer();
 
   void _sendGetDown();
-  bool _recvStr();
+  bool _recvStr(bool isSetup);
 
   void _executeReceiveCallback(String &cmd);
   void _executeAckCallback(bool result);

@@ -574,16 +574,24 @@ void SerialMIIO::_defaultMCUVersionCallback(const char *cmd, uint32_t length) {
 }
 
 void SerialMIIO::handle() {
-  switch (_state) {
-  case STATE_SETUP:
-    // 正在初始化
+  // 配置阶段和运行阶段分开处理
+  if (_state == STATE_SETUP || _state == STATE_SETUP_WAIT_ACK) {
+    // 配置阶段的处理逻辑
     if (_setupStatus == SETUP_OK) {
       _state = STATE_IDLE;
-      break;
+      return;
     }
-    _handleSetup(false);
-    _recvStr();
-    break;
+
+    if (_state == STATE_SETUP) {
+      _handleSetup(false);
+    } else if (_state == STATE_SETUP_WAIT_ACK) {
+      _recvStr(true);
+    }
+    return;
+  }
+
+  // 正常运行阶段的状态机
+  switch (_state) {
   case STATE_IDLE:
     // 空闲状态
     if (millis() - _lastPollMillis < _pollIntervalMs && _lastPollMillis != 0) {
@@ -596,19 +604,23 @@ void SerialMIIO::handle() {
     break;
   case STATE_WAIT_GET_DOWN:
     // 等待 get_down 结果
-    _recvStr(); // To: WAIT_REPLY or WAIT_ACK, IDLE if timeout
+    _recvStr(false); // To: WAIT_REPLY or WAIT_ACK, IDLE if timeout
     break;
   case STATE_WAIT_REPLY:
     // 等待回复
-    if (_recvStr()) {
+    if (_recvStr(false)) {
       _state = STATE_WAIT_ACK;
     }
     break;
   case STATE_WAIT_ACK:
     // 等待回复
-    if (_recvStr()) {
+    if (_recvStr(false)) {
       _state = STATE_IDLE;
     }
+    break;
+  default:
+    // 未知状态，回到空闲状态
+    _state = STATE_IDLE;
     break;
   }
 }
@@ -620,17 +632,21 @@ void SerialMIIO::_sendGetDown() {
   send([this](String &cmd) { _handleGetDown(cmd); });
 }
 
-bool SerialMIIO::_recvStr() {
+bool SerialMIIO::_recvStr(bool isSetup) {
+  // 通用接收处理函数
   // 返回 true 时表示处理完成
+  // isSetup: true表示配置阶段，false表示正常运行阶段
+
+  const char *prefix = isSetup ? "setup " : "";
 
   // 超时 增加重试次数
   if (_stream->available() <= 0 && millis() - _startMillis > _timeoutMs) {
-    DEBUG_MIIO("[SerialMIIO]receive timeout");
+    DEBUG_MIIO("[SerialMIIO]%sreceive timeout", prefix);
     _retry++;
     _startMillis = millis();
     _clearRecvBuffer();
     // 超时重传 保留回调函数
-    DEBUG_MIIO("[SerialMIIO]resend");
+    DEBUG_MIIO("[SerialMIIO]%sresend", prefix);
     send(_recvCallback);
     return false;
   }
@@ -641,14 +657,16 @@ bool SerialMIIO::_recvStr() {
 
     if (_recvBuffer.length() > CMD_BUF_SIZE) {
       DEBUG_MIIO(
-          "[SerialMIIO]receive cmd too long %d bytes", _recvBuffer.length());
+          "[SerialMIIO]%sreceive cmd too long %d bytes",
+          prefix,
+          _recvBuffer.length());
       _clearRecvBuffer();
       continue;
     }
 
     if (_recvBuffer.endsWith(END_STRING)) {
-      DEBUG_MIIO("[SerialMIIO]receive cmd end");
-      DEBUG_MIIO("[SerialMIIO]receive buffer: ");
+      DEBUG_MIIO("[SerialMIIO]%sreceive cmd end", prefix);
+      DEBUG_MIIO("[SerialMIIO]%sreceive buffer: ", prefix);
       DEBUG_MIIO(_recvBuffer.c_str());
       _executeReceiveCallback(_recvBuffer);
       return true;
@@ -656,9 +674,17 @@ bool SerialMIIO::_recvStr() {
   }
 
   if (_retry > _maxRetry) {
-    DEBUG_MIIO("[SerialMIIO]receive retry too many times");
+    DEBUG_MIIO("[SerialMIIO]%sreceive retry too many times", prefix);
     _executeReceiveCallback(_recvBuffer);
-    _state = STATE_IDLE;
+
+    if (isSetup) {
+      // 配置阶段重试次数过多，重新开始setup
+      _setupStatus = SETUP_ECHO;
+      _state = STATE_SETUP;
+    } else {
+      // 正常运行阶段，回到空闲状态
+      _state = STATE_IDLE;
+    }
     return true;
   }
 
@@ -696,8 +722,12 @@ void SerialMIIO::_executeAckCallback(bool result) {
     callback(result);
   }
 
+  // 根据当前状态切换到正确的下一状态
   if (_state == STATE_WAIT_ACK) {
     _state = STATE_IDLE;
+  } else if (_state == STATE_SETUP_WAIT_ACK) {
+    // Setup 阶段的 ACK 处理完成后，状态由 _handleSetup函数控制
+    // 这里不需要改变状态，让 _handleSetup 决定下一步
   }
 }
 
@@ -706,40 +736,46 @@ void SerialMIIO::_handleSetup(bool result) {
   case SETUP_ECHO:
     if (result) {
       _setupStatus = SETUP_MODEL;
+      _state = STATE_SETUP;
     } else {
       _sendBuffer = "echo off";
-
       sendWaitAck([this](bool result) { _handleSetup(result); });
+      _state = STATE_SETUP_WAIT_ACK;
     }
     break;
   case SETUP_MODEL:
     if (result) {
       _setupStatus = SETUP_BLE_PID;
+      _state = STATE_SETUP;
     } else {
       _sendBuffer = "model ";
       _sendBuffer += _model;
       sendWaitAck([this](bool result) { _handleSetup(result); });
+      _state = STATE_SETUP_WAIT_ACK;
     }
     break;
   case SETUP_BLE_PID:
     if (result) {
       _setupStatus = SETUP_MCU_VERSION;
-
+      _state = STATE_SETUP;
     } else {
       _sendBuffer = "ble_config set ";
       _sendBuffer += _blePid;
       _sendBuffer += " ";
       _sendBuffer += _mcuVersion;
       sendWaitAck([this](bool result) { _handleSetup(result); });
+      _state = STATE_SETUP_WAIT_ACK;
     }
     break;
   case SETUP_MCU_VERSION:
     if (result) {
       _setupStatus = SETUP_OK;
+      _state = STATE_SETUP;
     } else {
       _sendBuffer = "mcu_version ";
       _sendBuffer += _mcuVersion;
       sendWaitAck([this](bool result) { _handleSetup(result); });
+      _state = STATE_SETUP_WAIT_ACK;
     }
     break;
   case SETUP_OK:
