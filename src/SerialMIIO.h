@@ -187,6 +187,7 @@ private:
   uint16_t _retry = 0;
   uint16_t _maxRetry = USER_RECEIVE_RETRY;
   void _clearRecvBuffer();
+  void _resetRetry();
 
   void _sendGetDown();
   bool _recvStr(bool isSetup);

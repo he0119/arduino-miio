@@ -563,6 +563,7 @@ void SerialMIIO::_defaultinvokeActionCallback(
 
 void SerialMIIO::_defaultInvokeNoneCallback(const char *cmd, uint32_t length) {
   DEBUG_MIIO("[SerialMIIO]down none default callback");
+  _state = STATE_IDLE;
 }
 
 void SerialMIIO::_defaultMCUVersionCallback(const char *cmd, uint32_t length) {
@@ -646,7 +647,7 @@ bool SerialMIIO::_recvStr(bool isSetup) {
     _startMillis = millis();
     _clearRecvBuffer();
     // 超时重传 保留回调函数
-    DEBUG_MIIO("[SerialMIIO]%sresend", prefix);
+    DEBUG_MIIO("[SerialMIIO]%sresend %d/%d", prefix, _retry, _maxRetry);
     send(_recvCallback);
     return false;
   }
@@ -676,9 +677,10 @@ bool SerialMIIO::_recvStr(bool isSetup) {
   if (_retry > _maxRetry) {
     DEBUG_MIIO("[SerialMIIO]%sreceive retry too many times", prefix);
     _executeReceiveCallback(_recvBuffer);
+    _resetRetry();
 
     if (isSetup) {
-      // 配置阶段重试次数过多，重新开始setup
+      // 配置阶段重试次数过多，重新开始配置
       _setupStatus = SETUP_ECHO;
       _state = STATE_SETUP;
     } else {
@@ -693,6 +695,9 @@ bool SerialMIIO::_recvStr(bool isSetup) {
 
 void SerialMIIO::_clearRecvBuffer() {
   _recvBuffer = String();
+}
+
+void SerialMIIO::_resetRetry() {
   _retry = 0;
 }
 
@@ -709,6 +714,7 @@ void SerialMIIO::_executeReceiveCallback(String &cmd) {
 
   // 无论什么时候，执行完回调后，都清空缓存
   _clearRecvBuffer();
+  _resetRetry();
 }
 
 void SerialMIIO::_executeAckCallback(bool result) {
